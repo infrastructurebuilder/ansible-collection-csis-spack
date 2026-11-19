@@ -16,10 +16,11 @@ of the examples, kept apart from the code.
 
 ## Status
 
-0.0.1 (2026-11-18), the first release: eight modules, a role and a filter,
-tested against a stand-in for Spack and against the real Spack v1.2.0. It is
-on [Ansible Galaxy](https://galaxy.ansible.com/ui/repo/published/infrastructurebuilder/csis_spack/)
-as `infrastructurebuilder.csis_spack`.
+0.0.2 (2026-11-19): eight modules, a role and a filter, tested against a
+stand-in for Spack and against the real Spack v1.2.0. It is on
+[Ansible Galaxy](https://galaxy.ansible.com/ui/repo/published/infrastructurebuilder/csis_spack/)
+as `infrastructurebuilder.csis_spack`; the first release there was 0.0.1
+(2026-11-18).
 [CHANGELOG.md](CHANGELOG.md) says what each version holds. (The
 development versions this repository tagged before, 0.1.0 to 0.3.1, were
 withdrawn on 2026-11-18; the changelog says what became of them.)
@@ -40,7 +41,7 @@ From this repository at a release tag:
 collections:
   - name: https://github.com/infrastructurebuilder/ansible-collection-csis-spack.git
     type: git
-    version: "0.0.1"
+    version: "0.0.2"
 ```
 
 Then `ansible-galaxy collection install -r requirements.yml`.
