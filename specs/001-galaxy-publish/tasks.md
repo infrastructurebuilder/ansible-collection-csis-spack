@@ -84,8 +84,8 @@ published version to exist.)
 
 ## YOU ARE HERE
 
-Phase 5 is done: 0.0.1 is on Galaxy (2026-11-19), and installs by name.
-Next is T017, the hand-off to the Cloud Sandbox.
+Every task is done (2026-11-19): 0.0.1 is on Galaxy, installs by name, and
+the Cloud Sandbox's container test passes installing it from there.
 
 ---
 
@@ -112,8 +112,8 @@ Next is T017, the hand-off to the Cloud Sandbox.
 
 **Independent Test**: Cloud-Sandbox's container test.
 
-- [ ] T017 [US4] Hand off to the Cloud-Sandbox workspace, saying which version is published and what range to name. The work there: `exportit/sandbox-provisioning/requirements.yml` (which already names 0.0.1 from git) names the collection by name with a range; `exportit/cloud-sandbox/units.toml` keeps the version; the `tools` test that holds the two together reads the range; a container run installs from Galaxy
-- [ ] T018 [US4] When Cloud-Sandbox reports its container test passing, record it in `specs/001-galaxy-publish/spec.md` and set its Status to done
+- [X] T017 [US4] Hand off to the Cloud-Sandbox workspace, saying which version is published and what range to name. The work there: `exportit/sandbox-provisioning/requirements.yml` (which already names 0.0.1 from git) names the collection by name with a range; `exportit/cloud-sandbox/units.toml` keeps the version; the `tools` test that holds the two together reads the range; a container run installs from Galaxy
+- [X] T018 [US4] When Cloud-Sandbox reports its container test passing, record it in `specs/001-galaxy-publish/spec.md` and set its Status to done
 
 ---
 

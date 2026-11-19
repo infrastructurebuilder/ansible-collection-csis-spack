@@ -4,9 +4,9 @@
 
 **Created**: 2026-11-17
 
-**Status**: In progress: user stories 1 to 3 are done, user story 4 (the
-Cloud Sandbox) remains. 0.0.1 was cut on 2026-11-18 and published to Ansible
-Galaxy on 2026-11-19; see [Outcome](#outcome).
+**Status**: Done 2026-11-19. 0.0.1 was cut on 2026-11-18 and published to
+Ansible Galaxy on 2026-11-19, and the Cloud Sandbox installs it from there;
+see [Outcome](#outcome). Two checks need a second release (below).
 
 **Input**: Converted on 2026-11-17, on the operator's instruction, from
 collection stage 5 ("Ansible Galaxy, or not"), which was planned on 2026-11-14
@@ -280,6 +280,15 @@ Recorded 2026-11-19.
 - **What was published is what was tagged (acceptance scenario 1.3):** the
   tarball from Galaxy and one built from the tag's tree hold the same 57
   files with the same checksums.
+- **The Cloud Sandbox installs from Galaxy (user story 4, SC-006):**
+  reported by the Cloud-Sandbox workspace on 2026-11-19. Its
+  `sandbox-provisioning` `requirements.yml` names
+  `infrastructurebuilder.csis_spack` with `">=0.0.1,<0.1.0"`, and its
+  container test on AlmaLinux 10 installed 0.0.1 from galaxy.ansible.com by
+  that range. First apply: `site.yml` 55 changes, `users.yml` 11,
+  `jupyterhub.yml` 21, none failed; second apply and check mode: no
+  changes. Its root `just full-test` passed. The work is on branches
+  `feature/collection-from-galaxy` in `csis-sandbox-provisioning`
+  (`795009e`) and in Cloud-Sandbox (`9ca2759`), not merged there yet.
 - **Not yet proved:** a range picking up a later release (scenario 1.2), and
-  publishing a version both ways (SC-003); both need a second release. The
-  Cloud Sandbox (user story 4).
+  publishing a version both ways (SC-003); both need a second release.
