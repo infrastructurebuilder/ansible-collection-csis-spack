@@ -1,0 +1,34 @@
+---
+# Carry out spack_setup: a list of steps, in the order written. The role has
+# no step of its own; see README.md.
+
+- name: Check the whole list before any step is carried out
+  ansible.builtin.assert:
+    that: spack_setup_problems | length == 0
+    fail_msg: >-
+      spack_setup cannot be carried out, and nothing was changed:
+      {{ spack_setup_problems | join('; ') }}
+    quiet: true
+  vars:
+    spack_setup_problems: "{{ spack_setup | infrastructurebuilder.csis_spack.setup_problems }}"
+
+- name: Start with no captured environments and no results
+  ansible.builtin.set_fact:
+    spack_setup_environments: {}
+    spack_setup_results: []
+
+- name: Carry out each step, in the order written
+  ansible.builtin.include_tasks: step.yml
+  loop: "{{ spack_setup }}"
+  loop_control:
+    loop_var: spack_setup_step
+    index_var: spack_setup_index
+    label: "{{ spack_setup_index + 1 }}: {{ spack_setup_step | infrastructurebuilder.csis_spack.setup_label }}"
+  vars:
+    spack_setup_title: "{{ spack_setup_step | infrastructurebuilder.csis_spack.setup_label }}"
+    # A step names an environment an earlier step captured, or gives one as a
+    # mapping of variables, or has none.
+    spack_setup_step_environment: >-
+      {{ {} if spack_setup_step.environment is not defined
+         else (spack_setup_step.environment if spack_setup_step.environment is mapping
+               else spack_setup_environments[spack_setup_step.environment]) }}

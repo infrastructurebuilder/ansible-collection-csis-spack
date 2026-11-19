@@ -1,0 +1,15 @@
+---
+# A step of kind environment: capture the environment some shell lines
+# produce, under a name. Every option comes from the step; an option the step
+# does not give is left to the module's own default.
+
+- name: "Capture an environment | {{ spack_setup_title }}"
+  infrastructurebuilder.csis_spack.shell_environment:
+    shell: "{{ spack_setup_step.shell }}"
+    executable: "{{ spack_setup_step.executable | default(omit) }}"
+  register: spack_setup_done
+
+- name: "Remember the environment by its name | {{ spack_setup_title }}"
+  ansible.builtin.set_fact:
+    spack_setup_environments: >-
+      {{ spack_setup_environments | combine({spack_setup_step.name: spack_setup_done.environment}) }}

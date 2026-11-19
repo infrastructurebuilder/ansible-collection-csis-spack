@@ -1,0 +1,19 @@
+---
+# The system's own compiler: nothing has to be loaded first.
+#
+# Variables for the infrastructurebuilder.csis_spack.setup role.
+spack_setup_executable: /opt/spack/bin/spack
+spack_setup:
+  - kind: config
+    settings:
+      config:
+        build_jobs: 8
+  - kind: detect
+    compilers: true
+    externals: true
+  - kind: mirror
+    name: public-cache
+    url: https://cache.example.org/spack
+    type: [binary]
+  - kind: gpg_key
+    from_mirrors: true

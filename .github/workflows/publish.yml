@@ -1,0 +1,38 @@
+# Publish a release to Ansible Galaxy when its tag is pushed.
+#
+# It runs `just publish`, the same target the operator can run on their own
+# machine. That target refuses a version Galaxy already has, and says so,
+# so publishing a version both ways uploads it once.
+#
+# Needs the repository secret GALAXY_API_KEY (Settings, Secrets and variables,
+# Actions), or the same secret in the `galaxy` environment, which can also be
+# given required reviewers so that a tag waits for approval before publishing.
+# Without the key the job fails: it does not skip quietly.
+name: Publish to Ansible Galaxy
+
+on:
+  push:
+    # This repository's release tags are the bare version, as 0.0.1.
+    tags: ["[0-9]+.[0-9]+.[0-9]+"]
+  # Run again by hand for a tag, if a publish failed part-way.
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    runs-on: ubuntu-24.04
+    environment: galaxy
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # The tags, so that `just publish` can see that HEAD is the release tag.
+          fetch-depth: 0
+      - uses: astral-sh/setup-uv@v6
+      - uses: extractions/setup-just@v2
+      - run: just init
+      - run: just test
+      - run: just publish
+        env:
+          GALAXY_API_KEY: ${{ secrets.GALAXY_API_KEY }}

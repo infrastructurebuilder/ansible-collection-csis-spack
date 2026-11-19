@@ -1,0 +1,15 @@
+---
+# A step of kind command: run any Spack command. Every option comes from the
+# step; an option the step does not give is left to the module's own default.
+
+- name: "Run a Spack command | {{ spack_setup_title }}"
+  infrastructurebuilder.csis_spack.spack_command:
+    spack: "{{ spack_setup_executable }}"
+    scope: "{{ spack_setup_step.scope | default(spack_setup_scope) }}"
+    args: "{{ spack_setup_step.args }}"
+    changes: "{{ spack_setup_step.changes }}"
+    creates: "{{ spack_setup_step.creates | default(omit) }}"
+    sections: "{{ spack_setup_step.sections | default(omit) }}"
+    env: "{{ spack_setup_step.env | default(omit) }}"
+  environment: "{{ spack_setup_step_environment }}"
+  register: spack_setup_done

@@ -1,0 +1,12 @@
+---
+# A step of kind gpg_key: trust public keys. Every option comes from the step;
+# an option the step does not give is left to the module's own default.
+
+- name: "Trust keys | {{ spack_setup_title }}"
+  infrastructurebuilder.csis_spack.spack_gpg_key:
+    spack: "{{ spack_setup_executable }}"
+    key: "{{ spack_setup_step.key | default(omit) }}"
+    fingerprint: "{{ spack_setup_step.fingerprint | default(omit) }}"
+    from_mirrors: "{{ spack_setup_step.from_mirrors | default(omit) }}"
+  environment: "{{ spack_setup_step_environment }}"
+  register: spack_setup_done

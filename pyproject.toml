@@ -1,0 +1,70 @@
+[project]
+name = "ansible-collection-csis-spack"
+version = "0.0.1"
+description = "Tooling for developing the infrastructurebuilder.csis_spack Ansible collection"
+requires-python = ">=3.12,<3.13"
+dependencies = []
+
+# ansible-core is held to the series that RHEL 10 ships, which is what runs
+# the playbooks that use this collection.
+[dependency-groups]
+dev = [
+    "ansible-core>=2.16,<2.17",
+    "pyright>=1.1.400",
+    "pytest>=8",
+    "pytest-xdist>=3",
+    "pyyaml",
+    "ruff>=0.12",
+]
+
+[tool.uv]
+package = false
+
+[tool.ruff]
+line-length = 110
+target-version = "py312"
+extend-exclude = [".tmp", "tests/output"]
+
+[tool.ruff.lint]
+select = ["B", "C4", "E", "F", "I", "N", "PTH", "RUF", "SIM", "UP", "W"]
+# The pylint checks that `ansible-test sanity` runs on a collection, as far
+# as ruff has them: every message pylint 3.0.1 (ansible-core 2.16's) enables
+# under ansible-test's collection.cfg, matched to ruff's rule by its pylint
+# code. Left out: the checks collection.cfg disables, ruff's rules from pylint
+# extensions or later pylints, which ansible-test does not run, and those ruff
+# has only in preview. Ruff has no rule for some that ansible-test does run,
+# such as disallowed-name (`_` as a name) and dangerous-default-value
+# (`os.environ` as a default); `just full-test` finds those.
+extend-select = [
+    "PLC0105", "PLC0131", "PLC0132", "PLC0205", "PLC0207", "PLC0208", "PLC0414", "PLC2401",
+    "PLC2403", "PLC3002",
+    "PLE0100", "PLE0101", "PLE0115", "PLE0116", "PLE0117", "PLE0118", "PLE0237", "PLE0241",
+    "PLE0302", "PLE0303", "PLE0304", "PLE0305", "PLE0307", "PLE0308", "PLE0309", "PLE0604",
+    "PLE0605", "PLE0643", "PLE0704", "PLE1132", "PLE1142", "PLE1205", "PLE1206", "PLE1300",
+    "PLE1307", "PLE1310", "PLE1507", "PLE1519", "PLE1520", "PLE1700", "PLE2502", "PLE2510",
+    "PLE2512", "PLE2513", "PLE2514", "PLE2515",
+    "PLR0124", "PLR0133", "PLR0206", "PLR0402", "PLR1708", "PLR1722", "PLR1733", "PLR1736",
+    "PLW0108", "PLW0120", "PLW0127", "PLW0128", "PLW0129", "PLW0131", "PLW0133", "PLW0177",
+    "PLW0211", "PLW0245", "PLW0602", "PLW0604", "PLW0642", "PLW0711", "PLW1501", "PLW1507",
+    "PLW1510", "PLW2101", "PLW3301",
+]
+
+[tool.ruff.lint.per-file-ignores]
+# Modules follow Ansible's conventions, which ansible-test sanity holds them
+# to: imports after DOCUMENTATION (E402), the __future__ and __metaclass__
+# boilerplate (UP001, UP010), os.path and %-formatting as in ansible-core's
+# own modules (PTH, UP031), and dict() for argument specs (C408).
+"plugins/**" = ["E402", "UP001", "UP010", "UP031", "PTH", "C408"]
+
+[tool.pyright]
+include = ["plugins", "tests", "tools"]
+exclude = [".tmp", "tests/output"]
+# `just tree` puts the collection where its own imports find it.
+extraPaths = [".tmp/collections", "tests/unit", "tools"]
+typeCheckingMode = "standard"
+
+[tool.pytest.ini_options]
+testpaths = ["tests/unit"]
+pythonpath = [".tmp/collections", "tests/unit", "tools"]
+markers = ["integration: runs the modules against the real Spack (just full-test)"]
+addopts = "-m 'not integration'"

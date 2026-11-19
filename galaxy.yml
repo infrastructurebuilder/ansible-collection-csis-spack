@@ -1,0 +1,51 @@
+---
+# The collection's metadata, read by `ansible-galaxy collection build`.
+namespace: infrastructurebuilder
+name: csis_spack
+version: 0.0.1
+readme: README.md
+authors:
+  - mykelalvis
+description: >-
+  Manage Spack environments from Ansible: concretize, install, regenerate
+  module files and push to a build cache, with change detection and check
+  mode.
+license:
+  - GPL-3.0-or-later
+tags:
+  - spack
+  - hpc
+  - packaging
+dependencies: {}
+repository: https://github.com/infrastructurebuilder/ansible-collection-csis-spack
+homepage: https://github.com/infrastructurebuilder/ansible-collection-csis-spack
+# The README of the last release: main holds what was released, develop what is next.
+documentation: https://github.com/infrastructurebuilder/ansible-collection-csis-spack/blob/main/README.md
+issues: https://github.com/infrastructurebuilder/ansible-collection-csis-spack/issues
+build_ignore:
+  - .venv
+  - .tmp
+  - dist
+  - tests/output
+  - .gitignore
+  - .ruff_cache
+  - .pytest_cache
+  - uv.lock
+  - .python-version
+  - pyproject.toml
+  - Justfile
+  - tools
+  - .github
+  # Planning and agent material: Spec Kit, its specs, and what was retired.
+  - CLAUDE.md
+  - .claude
+  - .specify
+  - specs
+  - ATTIC
+  # An editor's workspace file. The build packs every file here that this
+  # list does not name, tracked by git or not.
+  - "*.code-workspace"
+  # direnv's file, which holds secrets such as GALAXY_API_KEY. It is ignored by
+  # git too, but the build reads the directory, not git.
+  - .envrc
+  - .direnv

@@ -1,0 +1,18 @@
+---
+# A compiler that Spack builds itself: the system's compiler builds it, and it
+# is then registered from where it was installed.
+#
+# The role is applied twice. Between the two, the site's own task builds an
+# environment that holds only the compiler, with
+# infrastructurebuilder.csis_spack.spack_env, and asks Spack where it went
+# (spack location -i mycompiler) to fill in mycompiler_prefix.
+spack_setup_before:
+  - kind: detect
+    compilers: true
+    externals: true
+
+spack_setup_after:
+  - kind: detect
+    compilers: true
+    paths: ["{{ mycompiler_prefix }}"]
+    require: [mycompiler@12]

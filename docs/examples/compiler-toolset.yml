@@ -1,0 +1,10 @@
+---
+# A second compiler beside the system's, in a directory that is not on PATH.
+spack_setup:
+  - kind: detect
+    compilers: true
+  - kind: detect
+    label: the toolset's compiler
+    compilers: true
+    paths: [/opt/toolset/usr]
+    require: [gcc@15]

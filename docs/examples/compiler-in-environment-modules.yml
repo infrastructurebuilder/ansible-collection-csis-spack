@@ -1,0 +1,32 @@
+---
+# A compiler installed outside Spack that is only visible once its environment
+# modules are loaded, with libraries beside it that Spack must use and never
+# build.
+#
+# The site's own tasks install the compiler before the role is applied.
+spack_setup:
+  # The only shell in the list, and it is the site's: what makes the compiler
+  # visible.
+  - kind: environment
+    name: mycompiler
+    shell: |
+      . /usr/share/Modules/init/bash
+      module load mycompiler/12 mympi/4.1
+  # Without the environment Spack would find nothing and say nothing; require
+  # turns that into a failure.
+  - kind: detect
+    compilers: true
+    environment: mycompiler
+    require: [mycompiler@12]
+  # What detection does not find is declared.
+  - kind: config
+    settings:
+      packages:
+        mympi:
+          externals:
+            - spec: mympi@4.1
+              prefix: /opt/mympi
+          buildable: false
+        all:
+          providers:
+            mpi: [mympi]

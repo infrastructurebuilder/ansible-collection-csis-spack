@@ -1,0 +1,3 @@
+---
+# The ansible-core series this collection is tested with; RHEL 10 ships 2.16.
+requires_ansible: ">=2.16.0"

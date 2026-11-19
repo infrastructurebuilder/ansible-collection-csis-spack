@@ -1,0 +1,17 @@
+---
+# A step of kind detect: have Spack look at the machine. Every option comes
+# from the step; an option the step does not give is left to the module's own
+# default.
+
+- name: "Look at the machine | {{ spack_setup_title }}"
+  infrastructurebuilder.csis_spack.spack_detect:
+    spack: "{{ spack_setup_executable }}"
+    scope: "{{ spack_setup_step.scope | default(spack_setup_scope) }}"
+    compilers: "{{ spack_setup_step.compilers | default(omit) }}"
+    externals: "{{ spack_setup_step.externals | default(omit) }}"
+    not_buildable: "{{ spack_setup_step.not_buildable | default(omit) }}"
+    exclude: "{{ spack_setup_step.exclude | default(omit) }}"
+    paths: "{{ spack_setup_step.paths | default(omit) }}"
+    require: "{{ spack_setup_step.require | default(omit) }}"
+  environment: "{{ spack_setup_step_environment }}"
+  register: spack_setup_done

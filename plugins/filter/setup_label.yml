@@ -1,0 +1,25 @@
+---
+DOCUMENTATION:
+  name: setup_label
+  short_description: Give a short name for one step of a spack_setup list
+  version_added: 0.0.1
+  description:
+    - Returns the step's C(label) when it has one, and otherwise its kind
+      followed by its main option, for the C(setup) role's output.
+  author:
+    - infrastructurebuilder (@infrastructurebuilder)
+  options:
+    _input:
+      description: One step.
+      type: dict
+      required: true
+
+EXAMPLES: |
+  - name: Name a step
+    ansible.builtin.debug:
+      msg: "{{ {'kind': 'mirror', 'name': 'site-cache'} | infrastructurebuilder.csis_spack.setup_label }}"
+
+RETURN:
+  _value:
+    description: "The name, such as V(mirror: site-cache)."
+    type: str

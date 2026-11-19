@@ -1,0 +1,73 @@
+---
+# The IOOS Cloud Sandbox's two shell scripts, as two lists.
+#
+# These reproduce, step for line, what its sandbox-provisioning playbooks do in
+# bash today (roles/spack and roles/intel_oneapi, from funcs-setup-instance.sh
+# L661-L700, L709-L732 and L919-L959). Every name and number below is the
+# sandbox's; none of them is in the collection.
+spack_setup_executable: /save/environments/spack.v1.2.0/bin/spack
+spack_setup_scope: site
+
+# Applied when Spack has just been cloned.
+spack_setup_base:
+  # "spack config add" without --scope writes to the user scope, and that is
+  # where the script's two settings are. Said here, it is at least visible.
+  - kind: config
+    scope: user
+    settings:
+      config:
+        install_tree:
+          padded_length: 73
+      modules:
+        default:
+          enable: [tcl]
+  - kind: detect
+    compilers: true
+  - kind: detect
+    externals: true
+  - kind: detect
+    externals: [cmake]
+    not_buildable: true
+  - kind: mirror
+    name: spack-public
+    url: https://cache.spack.io
+  - kind: gpg_key
+    from_mirrors: true
+
+# Applied after the sandbox's own tasks have installed oneAPI with dnf and
+# generated its module files.
+spack_setup_intel:
+  - kind: environment
+    name: intel
+    shell: |
+      . /usr/share/Modules/init/bash
+      module use -a /save/environments/modulefiles
+      module load intel/compiler/2024.2.1 intel/compiler-intel-llvm/2024.2.1
+      module load intel/ifort/2024.2.1 intel/mpi/2021.13 intel/mkl/2024.2
+  - kind: detect
+    compilers: true
+    environment: intel
+    require: [intel-oneapi-compilers@2024.2.1]
+  # "spack external find" does not detect these (tried); they are declared.
+  - kind: config
+    settings:
+      packages:
+        intel-oneapi-mkl:
+          externals:
+            - spec: intel-oneapi-mkl@2024.2
+              prefix: /opt/intel/oneapi
+          buildable: false
+        intel-oneapi-mpi:
+          externals:
+            - spec: intel-oneapi-mpi@2021.13
+              prefix: /opt/intel/oneapi
+          buildable: false
+        all:
+          providers:
+            mkl: [intel-oneapi-mkl]
+            blas: [intel-oneapi-mkl]
+            lapack: [intel-oneapi-mkl]
+            scalapack: [intel-oneapi-mkl]
+            mpi: [intel-oneapi-mpi]
+  - kind: gpg_key
+    from_mirrors: true

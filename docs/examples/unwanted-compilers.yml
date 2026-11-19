@@ -1,0 +1,17 @@
+---
+# Detection registers every compiler it sees. One that is installed but must
+# not be used is removed afterwards.
+#
+# Detection finds it again on every run, and the next step removes it again:
+# this list reports a change every time it is applied. Where that matters,
+# declare the compilers that are wanted with a config step instead of
+# detecting them.
+spack_setup:
+  - kind: detect
+    compilers: true
+  - kind: config
+    label: do not use the old compiler
+    state: absent
+    settings:
+      packages:
+        oldcompiler:

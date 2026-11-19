@@ -1,0 +1,16 @@
+---
+# A site's own signed build cache: its key, by fingerprint, then the mirror.
+spack_setup:
+  - kind: gpg_key
+    key: https://cache.example.org/spack/mirror.pub
+    fingerprint: 7500481A18F8F903534D953AC6F328B79BE7166C
+  - kind: mirror
+    name: site-cache
+    url: s3://example-bucket/spack/mirror
+    type: [binary]
+    signed: true
+  # Not covered by another kind: a plain command, with how to tell a change.
+  - kind: command
+    label: read the mirror's index
+    args: [buildcache, list, --allarch]
+    changes: never

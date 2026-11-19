@@ -1,0 +1,16 @@
+---
+# One step of spack_setup: the tasks of its kind, then a line in the results.
+
+- name: "Carry out the step | {{ spack_setup_title }}"
+  ansible.builtin.include_tasks: "kinds/{{ spack_setup_step.kind }}.yml"
+
+- name: "Record what the step did | {{ spack_setup_title }}"
+  ansible.builtin.set_fact:
+    spack_setup_results: >-
+      {{ spack_setup_results + [{
+           'step': spack_setup_index + 1,
+           'kind': spack_setup_step.kind,
+           'label': spack_setup_title,
+           'changed': spack_setup_done.changed | default(false),
+           'result': spack_setup_done,
+         }] }}

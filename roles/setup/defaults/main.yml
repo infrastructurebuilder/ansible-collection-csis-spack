@@ -1,0 +1,17 @@
+---
+# The steps to carry out, in order. Empty: the role knows no step of its own.
+# See the role's README for the kinds of step and their options.
+spack_setup: []
+
+# The Spack executable, as a path or a name looked up on PATH.
+#
+# Before 0.0.1 this variable was named spack_setup_spack, and that name still
+# works: a playbook that sets it, and does not set spack_setup_executable,
+# runs what it names. That is why the old name has no
+# default of its own here: with one it would always be defined, and nothing
+# would tell a playbook that set it from one that did not. A playbook that
+# sets both runs spack_setup_executable.
+spack_setup_executable: "{{ spack_setup_spack | default('spack') }}"
+
+# The configuration scope of a step that does not name one.
+spack_setup_scope: site

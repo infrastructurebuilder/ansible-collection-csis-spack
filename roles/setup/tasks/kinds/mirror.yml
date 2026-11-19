@@ -1,0 +1,15 @@
+---
+# A step of kind mirror: declare one mirror. Every option comes from the step;
+# an option the step does not give is left to the module's own default.
+
+- name: "Declare a mirror | {{ spack_setup_title }}"
+  infrastructurebuilder.csis_spack.spack_mirror:
+    spack: "{{ spack_setup_executable }}"
+    scope: "{{ spack_setup_step.scope | default(spack_setup_scope) }}"
+    name: "{{ spack_setup_step.name }}"
+    url: "{{ spack_setup_step.url | default(omit) }}"
+    type: "{{ spack_setup_step.type | default(omit) }}"
+    signed: "{{ spack_setup_step.signed | default(omit) }}"
+    state: "{{ spack_setup_step.state | default(omit) }}"
+  environment: "{{ spack_setup_step_environment }}"
+  register: spack_setup_done
