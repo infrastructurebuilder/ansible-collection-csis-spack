@@ -16,9 +16,9 @@ of the examples, kept apart from the code.
 
 ## Status
 
-Not yet released. The first release will be 0.0.1: eight modules, a role
-and a filter, tested against a stand-in for Spack and against the real
-Spack v1.2.0. It will also be the first version on Ansible Galaxy.
+0.0.1 (2026-11-18), the first release: eight modules, a role and a filter,
+tested against a stand-in for Spack and against the real Spack v1.2.0. Not
+yet on Ansible Galaxy: 0.0.1 is the first version to be published there.
 [CHANGELOG.md](CHANGELOG.md) says what each version holds. (The
 development versions this repository tagged before, 0.1.0 to 0.3.1, were
 withdrawn on 2026-11-18; the changelog says what became of them.)
@@ -33,7 +33,7 @@ collections:
     version: ">=0.0.1,<0.1.0"
 ```
 
-From this repository at a release tag, once 0.0.1 is tagged:
+From this repository at a release tag:
 
 ```yaml
 collections:
