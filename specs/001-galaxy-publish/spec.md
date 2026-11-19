@@ -4,11 +4,9 @@
 
 **Created**: 2026-11-17
 
-**Status**: In progress. The publishing is prepared and on `develop`. The
-first upload waits for the operator's namespace on Ansible Galaxy, which was
-requested on 2026-11-16 and granted by 2026-11-18, when the operator also had
-an API token. 0.0.1 was cut on 2026-11-18; its upload waits for the
-operator's word.
+**Status**: In progress: user stories 1 to 3 are done, user story 4 (the
+Cloud Sandbox) remains. 0.0.1 was cut on 2026-11-18 and published to Ansible
+Galaxy on 2026-11-19; see [Outcome](#outcome).
 
 **Input**: Converted on 2026-11-17, on the operator's instruction, from
 collection stage 5 ("Ansible Galaxy, or not"), which was planned on 2026-11-14
@@ -260,3 +258,28 @@ collection installed from Galaxy.
   and under its own rules. This repository's part is to say when a version is
   published and what range to name.
 - Publishing anything of the Cloud Sandbox's own is out of scope.
+
+## Outcome
+
+Recorded 2026-11-19.
+
+- **Published:** `infrastructurebuilder.csis_spack` 0.0.1 is on
+  galaxy.ansible.com (created 2026-11-19 10:48 UTC). The tag push of
+  2026-11-18 started no run, because workflows were not yet enabled on the
+  repository after it was recreated; once the operator enabled them, the
+  workflow was started by hand on the tag (`workflow_dispatch`, run
+  44508677571). It ran `just test`, then `just publish`, which ran
+  galaxy-importer, uploaded the tarball and waited for Galaxy's import to
+  finish.
+- **The key** is an organisation secret of `infrastructurebuilder`, which the
+  repository can use; on the operator's machine it is in a git-ignored
+  `.envrc`, loaded by direnv.
+- **Installs by name (T015):** into an empty collections path outside the
+  repository, `ansible-galaxy collection install infrastructurebuilder.csis_spack`
+  fetched 0.0.1 from Galaxy, and `ansible-doc` described `spack_env`.
+- **What was published is what was tagged (acceptance scenario 1.3):** the
+  tarball from Galaxy and one built from the tag's tree hold the same 57
+  files with the same checksums.
+- **Not yet proved:** a range picking up a later release (scenario 1.2), and
+  publishing a version both ways (SC-003); both need a second release. The
+  Cloud Sandbox (user story 4).
