@@ -17,15 +17,16 @@ of the examples, kept apart from the code.
 ## Status
 
 0.0.1 (2026-11-18), the first release: eight modules, a role and a filter,
-tested against a stand-in for Spack and against the real Spack v1.2.0. Not
-yet on Ansible Galaxy: 0.0.1 is the first version to be published there.
+tested against a stand-in for Spack and against the real Spack v1.2.0. It is
+on [Ansible Galaxy](https://galaxy.ansible.com/ui/repo/published/infrastructurebuilder/csis_spack/)
+as `infrastructurebuilder.csis_spack`.
 [CHANGELOG.md](CHANGELOG.md) says what each version holds. (The
 development versions this repository tagged before, 0.1.0 to 0.3.1, were
 withdrawn on 2026-11-18; the changelog says what became of them.)
 
 ## Installing it
 
-From Ansible Galaxy, once it is published there, in a `requirements.yml`:
+From Ansible Galaxy, in a `requirements.yml`:
 
 ```yaml
 collections:
