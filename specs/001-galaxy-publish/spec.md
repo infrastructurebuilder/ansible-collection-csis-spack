@@ -6,7 +6,8 @@
 
 **Status**: Done 2026-11-19. 0.0.1 was cut on 2026-11-18 and published to
 Ansible Galaxy on 2026-11-19, and the Cloud Sandbox installs it from there;
-see [Outcome](#outcome). Two checks need a second release (below).
+see [Outcome](#outcome). The second release, 0.0.2 (2026-11-19), proved the
+last two checks.
 
 **Input**: Converted on 2026-11-17, on the operator's instruction, from
 collection stage 5 ("Ansible Galaxy, or not"), which was planned on 2026-11-14
@@ -290,5 +291,11 @@ Recorded 2026-11-19.
   changes. Its root `just full-test` passed. The work is on branches
   `feature/collection-from-galaxy` in `csis-sandbox-provisioning`
   (`795009e`) and in Cloud-Sandbox (`9ca2759`), not merged there yet.
-- **Not yet proved:** a range picking up a later release (scenario 1.2), and
-  publishing a version both ways (SC-003); both need a second release.
+- **Published both ways, uploaded once (SC-003, scenario 3.3):** 0.0.2 was
+  published from the operator's machine (`direnv exec . just publish` at the
+  tag), then its tag was pushed. The workflow's run, 44525281597, passed and
+  said "infrastructurebuilder.csis_spack 0.0.2 is already on
+  https://galaxy.ansible.com/api/: nothing uploaded".
+- **A range picks up a later release (scenario 1.2):** with 0.0.2 on Galaxy, a
+  `requirements.yml` naming `>=0.0.1,<0.1.0` installed 0.0.2 into an empty
+  collections path, with no change to the file.
