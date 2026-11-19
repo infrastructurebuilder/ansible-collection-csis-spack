@@ -6,9 +6,9 @@
 
 **Status**: In progress. The publishing is prepared and on `develop`. The
 first upload waits for the operator's namespace on Ansible Galaxy, which was
-requested on 2026-11-16 and had not been granted on 2026-11-17. On 2026-11-18
-the operator had an API token; that the namespace is granted was not yet
-confirmed.
+requested on 2026-11-16 and granted by 2026-11-18, when the operator also had
+an API token. 0.0.1 was cut on 2026-11-18; its upload waits for the
+operator's word.
 
 **Input**: Converted on 2026-11-17, on the operator's instruction, from
 collection stage 5 ("Ansible Galaxy, or not"), which was planned on 2026-11-14

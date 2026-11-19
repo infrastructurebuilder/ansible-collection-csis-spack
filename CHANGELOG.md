@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.0.1 (unreleased)
+## 0.0.1 (2026-11-18)
 
 The first release, and the first version on Ansible Galaxy
 ([specs/001-galaxy-publish](specs/001-galaxy-publish/spec.md)).
@@ -73,7 +73,7 @@ their tags and their `release/*` branches were deleted from the
 repository. Later the same day the repository's history was reset to a
 single commit, so their commits are no longer in it either. Everything they
 held is in 0.0.1, above. A `requirements.yml` that names one of those tags no
-longer installs; name 0.0.1 instead, once it is tagged.
+longer installs; name 0.0.1 instead.
 
 Their plans are kept, as history only, in
 [ATTIC/COLL-INPROGRESS/](ATTIC/COLL-INPROGRESS/).
