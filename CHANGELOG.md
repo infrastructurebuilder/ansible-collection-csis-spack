@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.0.2 (2026-11-19)
+
+Documentation only; nothing in the modules, the role or the filters
+changes, and a playbook written for 0.0.1 runs as it is.
+
+- The README says that the collection is on Ansible Galaxy, and links to
+  it there. 0.0.1's README, the one Galaxy shows for that version, still
+  said it was not.
+
 ## 0.0.1 (2026-11-18)
 
 The first release, and the first version on Ansible Galaxy
