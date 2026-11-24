@@ -47,6 +47,27 @@ the same day by running `spack buildcache keys --install --trust
 --yes-to-all` through this collection's generic `command` step in place of
 `from_mirrors`. They can go back to `from_mirrors` once this is released.
 
+## Clarifications
+
+### Session 2026-11-24
+
+- Q: If a supported Spack (1.0 or 1.1) has no `--yes-to-all` on
+  `spack buildcache keys`, what does `spack_gpg_key` do with
+  `from_mirrors: true`? → A: It fails before running anything, with a message
+  naming the Spack version and saying that `from_mirrors` needs
+  `buildcache keys --yes-to-all`. No fallback (no answering on stdin, no
+  running without the option), and the floor stays Spack 1.0.
+- Q: Does this spec check only `buildcache keys` for an unanswered
+  confirmation prompt, or every Spack command the collection runs? → A: Every
+  command the modules run is checked against the real Spack, and any other
+  unanswered prompt found is fixed in this spec, in the same release (FR-007).
+- Q: Where does the new real-Spack test of `from_mirrors` run: through the
+  module, through the `setup` role, or both? → A: Both. The module test
+  (`tests/integration/test_real_spack.py`, signing its zlib push) covers User
+  Story 1's three scenarios; the role test
+  (`tests/integration/test_real_setup.py`) runs one `from_mirrors` step twice,
+  a change and then none (FR-003, SC-001).
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - The mirrors' keys are trusted, unattended (Priority: P1)
@@ -79,10 +100,12 @@ release that adds or changes a confirmation is found by `just full-test`, not
 on a head node.
 
 **Why this priority**: the fake Spack cannot know what the real one asks; the
-same gap could hide the next prompt.
+same gap could hide the next prompt. So every command the modules run is
+checked for one too (FR-007).
 
-**Independent Test**: the new integration test fails on the module as it is
-today (it reads end-of-file at the prompt), and passes with the fix.
+**Independent Test**: the new integration tests, of the module and of the
+role, fail on the module as it is today (it reads end-of-file at the prompt),
+and pass with the fix.
 
 ### Edge Cases
 
@@ -92,9 +115,11 @@ today (it reads end-of-file at the prompt), and passes with the fix.
   spack mirror"), as today.
 - Check mode: nothing is run and nothing trusted, as today; the step says it
   could not preview (`previewed: false`).
-- A Spack older than the collection's floor that has no `--yes-to-all` on
-  `buildcache keys`: the collection needs Spack 1.0 or later; if any 1.x
-  lacks the option, the module says so rather than failing obscurely.
+- A Spack of 1.0 or later that has no `--yes-to-all` on `buildcache keys`
+  (if planning finds any): with `from_mirrors: true` the step fails before it
+  runs anything, and its message names the Spack version and says that
+  `from_mirrors` needs `buildcache keys --yes-to-all`. It does not answer the
+  prompt on stdin or run without the option.
 
 ## Requirements *(mandatory)*
 
@@ -103,14 +128,25 @@ today (it reads end-of-file at the prompt), and passes with the fix.
 - **FR-001**: With `from_mirrors: true`, `spack_gpg_key` MUST run
   `spack buildcache keys --install --trust --yes-to-all` (or `-y`), so that
   Spack's confirmation is answered, as it already is for `spack gpg trust -y`.
+  On a Spack that has no such option, it MUST fail before running anything,
+  with a message naming the Spack version (see Edge Cases); this is held by a
+  unit test against the stand-in `spack`.
 - **FR-002**: The step's report MUST stay as it is: a change only for keys
   trusted afterwards and not before (from `spack gpg list --trusted`), so a
   second run against the same mirrors reports none (Principle II).
-- **FR-003**: An integration test against the real Spack MUST exercise
+- **FR-003**: Integration tests against the real Spack MUST exercise
   `from_mirrors` with a mirror that publishes a key, made in the test (a
-  throwaway signing key, a package pushed signed to a mirror in a directory),
-  covering User Story 1's three scenarios; it MUST fail on the module as it
-  is today.
+  throwaway signing key, a package installed with `--fake` and pushed signed
+  to a mirror in a directory), at two levels:
+  - the module, in `tests/integration/test_real_spack.py` (signing its zlib
+    push), covering User Story 1's three scenarios;
+  - the `setup` role, in `tests/integration/test_real_setup.py`, running one
+    `gpg_key` step of `from_mirrors: true` twice: the first run trusts the key
+    and reports a change, the second reports none. That test's "nothing is
+    built or fetched" no longer holds, and its docstring says what it now
+    installs and pushes.
+
+  Both MUST fail on the module as it is today.
 - **FR-004**: The unit test that holds the command's arguments MUST hold them
   to the new form.
 - **FR-005**: The module's documentation MUST say that the keys a mirror
@@ -121,6 +157,16 @@ today (it reads end-of-file at the prompt), and passes with the fix.
 - **FR-006**: The fix MUST go out in a release (the next of the 0.0 series, by
   semantic versioning a patch), with a changelog entry naming the failure it
   fixes; releasing is on the operator's word (Principle V).
+- **FR-007**: Every Spack command that any module in `plugins/modules/` runs
+  MUST be checked against the real Spack (the pinned 1.2.0) for a
+  confirmation it can ask, and the result for each command recorded in the
+  spec's research. Every confirmation found that the module does not already
+  answer MUST be fixed in this spec, as FR-001 fixes `buildcache keys`: the
+  module passes Spack's own option for it, and fails with a message naming
+  the Spack version where that option is missing. Each fix MUST come with a
+  unit test that holds the new arguments and, where the prompt can be reached
+  against the real Spack, an integration test; it goes out in the same
+  release and the same changelog entry as FR-006.
 
 ## Success Criteria *(mandatory)*
 
@@ -128,9 +174,9 @@ today (it reads end-of-file at the prompt), and passes with the fix.
 
 - **SC-001**: A play applying the `setup` role with `from_mirrors: true`
   against a mirror that publishes a key finishes with no prompt, and a second
-  run reports no change.
-- **SC-002**: The new integration test fails on 0.0.2's module and passes on
-  the fixed one, through `just full-test`.
+  run reports no change; the role-level integration test (FR-003) shows it.
+- **SC-002**: The new integration tests, module and role, fail on 0.0.2's
+  module and pass on the fixed one, through `just full-test`.
 - **SC-003**: After the release, the Cloud-Sandbox's playbooks can replace
   their `command` steps with `from_mirrors` again; that change is theirs, not
   this spec's.
