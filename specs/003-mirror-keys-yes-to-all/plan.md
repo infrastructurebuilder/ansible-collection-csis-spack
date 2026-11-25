@@ -189,6 +189,7 @@ roles/setup/
 └── README.md
 tests/unit/
 ├── fake_spack.py, fake_spack_setup.py   # --help, the 1.0/1.1 behaviour
+├── fake_spack_help.py                   # new: help texts as Spack 1.2.0 prints them
 ├── test_module_utils.py                 # answered()
 ├── test_spack_gpg_key.py                # new forms (FR-004)
 ├── test_spack_*.py                      # yes_to_all on and off, per module
@@ -197,5 +198,6 @@ tests/integration/test_real_spack.py, test_real_setup.py
 CHANGELOG.md                             # Unreleased
 ```
 
-**Structure Decision**: the collection's existing layout; no file is added
-outside `specs/`.
+**Structure Decision**: the collection's existing layout. One file is added
+outside `specs/`: `tests/unit/fake_spack_help.py`, the stand-in's help texts,
+kept apart because they are long and copied from the real Spack.
