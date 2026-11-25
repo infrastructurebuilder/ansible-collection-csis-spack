@@ -4,13 +4,15 @@
 
 **Created**: 2026-11-24
 
-**Status**: Done 2026-11-25, not yet released. Built on
+**Status**: Done and released, 2026-11-25: 0.0.3 is on Ansible Galaxy,
+published by the workflow the tag `0.0.3` started (run 45668354520; Galaxy
+lists 0.0.1, 0.0.2 and 0.0.3). Built on
 `feature/mirror-keys-yes-to-all`, where `just full-test` passed (270 unit
 tests; 15 integration tests, each of five run against the real Spack 1.0.0,
 1.1.0 and 1.2.0; `ansible-test sanity`; Galaxy's import checks), and
 squash-merged into `develop` as `058744b`; `develop` and the feature branch
-were pushed the same day. What is left is T038's release of 0.0.3, on the
-operator's word.
+were pushed the same day, and released from `release/0.0.3` (`main` at
+`c264fa3`, the tag `0.0.3`) on the operator's word.
 
 Written in the Cloud-Sandbox workshop's session, on the operator's
 instruction ("write a new spec for the collection project"), and committed
