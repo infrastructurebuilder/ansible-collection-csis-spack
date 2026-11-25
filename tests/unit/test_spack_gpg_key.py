@@ -26,8 +26,8 @@ def test_a_key_file_is_trusted_and_its_fingerprint_reported(spack: Spack) -> Non
     result = trust(spack, key=path)
     assert (result["changed"], result["trusted"]) == (True, [ONE])
     assert spack.state["trusted"] == [ONE]
-    # Spack 1.2 asks before trusting each key; the option, which its help lists, answers it.
-    assert spack.calls("gpg", "trust") == [["gpg", "trust", "--help"], ["gpg", "trust", "--yes-to-all", path]]
+    # Spack 1.2 asks before trusting each key; the option answers it.
+    assert spack.calls("gpg", "trust") == [["gpg", "trust", "--yes-to-all", path]]
 
 
 def test_a_second_run_changes_nothing_and_does_not_ask_spack_to_trust_again(spack: Spack) -> None:
@@ -83,10 +83,10 @@ def test_the_keys_the_mirrors_publish_are_trusted(spack: Spack) -> None:
     result = trust(spack, from_mirrors=True)
     assert (result["changed"], result["trusted"]) == (True, sorted([ONE, TWO]))
     assert spack.calls("buildcache", "keys") == [
-        ["buildcache", "keys", "--help"],
-        ["buildcache", "keys", "--yes-to-all", "--install", "--trust"],
+        ["buildcache", "keys", "--yes-to-all", "--install", "--trust"]
     ]
-    # Spack asks again for keys it trusts already; a second run is answered too, and changes nothing.
+    # Spack asks again for keys it trusts already; a second run is answered
+    # too, and changes nothing.
     assert trust(spack, from_mirrors=True)["changed"] is False
 
 
@@ -122,7 +122,7 @@ def test_the_mirrors_keys_are_answered_for_whatever_yes_to_all_says(spack: Spack
 def test_spack_1_0_and_1_1_are_run_without_the_option_they_refuse(spack: Spack) -> None:
     # They have neither the question nor --yes-to-all, and fail with
     # "unrecognized arguments: -y" when given it (research.md, R2).
-    spack.update(spack_like="1.1")
+    spack.update(version="1.1.0 (0c2be44e4ece21eb091ad5de4c97716b7c6d4c87)")
     spack.module("spack_mirror", name="site-cache", url="https://cache.example.org", type=["binary"])
     spack.update(mirror_keys={"site-cache": [ONE]})
     from_mirrors = trust(spack, from_mirrors=True)
@@ -130,14 +130,23 @@ def test_spack_1_0_and_1_1_are_run_without_the_option_they_refuse(spack: Spack) 
     from_file = trust(spack, key=key_file(spack, TWO))
     assert (from_file["failed"], from_file["changed"], from_file["trusted"]) == (False, True, [TWO])
     assert spack.calls("buildcache", "keys", "--install") == [["buildcache", "keys", "--install", "--trust"]]
-    trusts = [call[2:] for call in spack.calls("gpg", "trust") if call[-1] != "--help"]
-    assert trusts == [[key_file(spack, TWO)]]
+    assert [call[2:] for call in spack.calls("gpg", "trust")] == [[key_file(spack, TWO)]]
     assert trust(spack, from_mirrors=True)["changed"] is False
 
 
-def test_each_trust_reads_its_help_once(spack: Spack) -> None:
+def test_the_trusts_read_no_help_the_version_decides(spack: Spack) -> None:
     spack.module("spack_mirror", name="site-cache", url="https://cache.example.org", type=["binary"])
     spack.update(mirror_keys={"site-cache": [ONE]})
     trust(spack, key=key_file(spack, TWO), from_mirrors=True)
-    helps = [call for call in spack.calls() if call[-1:] == ["--help"]]
-    assert helps == [["gpg", "trust", "--help"], ["buildcache", "keys", "--help"]]
+    assert [call for call in spack.calls() if call[-1:] == ["--help"]] == []
+
+
+def test_spack_1_0_reads_its_keys_and_mirrors_another_way(spack: Spack) -> None:
+    # No "gpg list --fmt" and no "config get --json" (research.md, R7).
+    spack.update(version="1.0.0 (73eaea13f381e3495299284856fd02a64e1d154c)")
+    added = spack.module("spack_mirror", name="site-cache", url="https://cache.example.org", type=["binary"])
+    assert added["failed"] is False, added.get("msg")
+    spack.update(mirror_keys={"site-cache": [ONE]})
+    result = trust(spack, from_mirrors=True)
+    assert (result["failed"], result["trusted"]) == (False, [ONE])
+    assert trust(spack, from_mirrors=True)["changed"] is False

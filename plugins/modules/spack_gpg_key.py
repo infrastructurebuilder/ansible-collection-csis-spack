@@ -25,11 +25,11 @@ description:
   - Spack 1.2 asks whether to trust each key, C([y/N]), before it trusts
     it, even a key it trusts already. Ansible gives Spack no terminal to answer
     from, so the question would fail the task. Both trusts are therefore run
-    with C(--yes-to-all) where the help of the Spack on the node lists it
-    (Spack 1.2 and later; C(spack gpg trust --help) and
-    C(spack buildcache keys --help) are read once each, before the trust).
-    Spack 1.0 and 1.1 do not ask, and refuse the option, so it is left out
-    there. Nothing is ever answered on Spack's input.
+    with C(--yes-to-all) on Spack 1.2 and later. Spack 1.0 and 1.1 do not
+    ask, and refuse the option, so it is left out there. Nothing is ever
+    answered on Spack's input.
+  - The trusted keys are read from C(spack gpg list --trusted --fmt colons),
+    or, on Spack 1.0 and 1.1, which have no C(--fmt), from gpg's own listing.
   - Needs Spack 1.0 or later.
 author:
   - infrastructurebuilder (@infrastructurebuilder)
@@ -119,7 +119,7 @@ from ansible_collections.infrastructurebuilder.csis_spack.plugins.module_utils.s
 
 
 def trusted(spack):
-    return set(fingerprints(spack.run(["gpg", "list", "--trusted", "--fmt", "colons"])))
+    return set(spack.trusted_keys())
 
 
 def key_file(module, key, scratch):
@@ -166,8 +166,9 @@ def main():
             module.fail_json(msg="fingerprint must be 40 hexadecimal digits", **result)
     scratch = tempfile.mkdtemp(prefix="spack-gpg-key-")
     try:
-        # Both trusts answer Spack's question in any case (consent=True):
-        # asking for a key, or for the mirrors' keys, is the consent.
+        # Both trusts answer Spack's question, where it asks, whatever
+        # yes_to_all says: asking for a key, or for the mirrors' keys, is the
+        # consent.
         spack = Spack(module, params["spack"], yes_to_all=params["yes_to_all"])
         result["spack_version"] = ".".join(str(part) for part in spack.require_version())
         before = trusted(spack)
@@ -189,13 +190,13 @@ def main():
             else:
                 result["previewed"] = False
             if not module.check_mode and (found is None or expected):
-                spack.run(spack.answered(["gpg", "trust", path], words=2, consent=True))
+                spack.run(spack.trusting(["gpg", "trust", path], words=2))
         if params["from_mirrors"]:
             if module.check_mode:
                 result["previewed"] = False
             else:
                 keys = ["buildcache", "keys", "--install", "--trust"]
-                spack.run(spack.answered(keys, words=2, consent=True))
+                spack.run(spack.trusting(keys, words=2))
         if module.check_mode:
             result["trusted"] = sorted(expected)
         else:

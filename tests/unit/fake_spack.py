@@ -19,7 +19,8 @@ State keys:
   push_format      "other": ``buildcache push`` words its messages as no Spack does today
   overwritten      hashes that a push with --force replaced on the mirror, in order
   fail             {"<subcommand>": true}: that subcommand fails
-  spack_like       "1.0" or "1.1": help and key commands as in those versions (fake_spack_setup.py)
+  version          also the version the stand-in plays: "1.0..." and "1.1..." make the
+                   commands that differ behave as in those versions (fake_spack_setup.py)
   (and those of fake_spack_setup.py, for configuration, mirrors, keys and detection)
   calls            every argument list the fake was run with
 """
@@ -28,6 +29,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import shutil
 import sys
 from datetime import datetime
@@ -70,9 +72,7 @@ HELP = json.loads((Path(__file__).resolve().parent / "fake_spack_help.json").rea
 
 def help_text(state: dict[str, Any], words: list[str]) -> int:
     """Print ``spack <words> --help`` as the real Spack printed it (fake_spack_help.json)."""
-    name = " ".join(words)
-    old = fake_spack_setup.old_spack(state) and name in HELP["v1.1.0"]
-    text = HELP["v1.1.0" if old else "v1.2.0"].get(name)
+    text = HELP["v1.2.0"].get(" ".join(words))
     if text is None:
         print(
             f"==> Error: {words[0] if words else ''} is not a recognized Spack command or extension "
@@ -84,12 +84,32 @@ def help_text(state: dict[str, Any], words: list[str]) -> int:
     return 0
 
 
+def config_get_for(code: str) -> list[str]:
+    """The "config get --json" that the module's "spack python -c" stands for (spack.py's CONFIG_*)."""
+    scoped = re.search(r"get_config\('([\w-]+)', scope='([^']+)'\)", code)
+    if scoped:
+        return ["config", "--scope", scoped.group(2), "get", "--json", scoped.group(1)]
+    merged = re.search(r"spack\.config\.get\('([\w-]+)'\)", code)
+    assert merged, f"the stand-in does not know this Python: {code!r}"
+    return ["config", "get", "--json", merged.group(1)]
+
+
 def main(argv: list[str]) -> int:
     path, state = load()
     state.setdefault("calls", []).append(argv)
     save(path, state)
     if argv[-1:] == ["--help"]:
         return help_text(state, argv[:-1])
+    if argv[:1] == ["-e"]:
+        env_args, rest = argv[:2], argv[2:]
+    else:
+        env_args, rest = [], argv
+    if rest[:2] == ["python", "-c"]:
+        # Spack 1.0's way to configuration as JSON, read as the "config get --json" it stands for.
+        argv = env_args + config_get_for(rest[2])
+    elif "--json" in rest and rest[:1] == ["config"] and fake_spack_setup.playing(state) < (1, 1):
+        print("==> Error: unrecognized arguments: --json", file=sys.stderr)
+        return 1
     env = None
     if argv[:1] == ["-e"]:
         env, argv = argv[1], argv[2:]

@@ -1,4 +1,4 @@
-"""The setup role against the real Spack v1.2.0, on the local machine (just full-test).
+"""The setup role against the real Spack 1.0.0, 1.1.0 and 1.2.0, on the local machine (just full-test).
 
 Everything is written to a user scope and a keyring made for the test, so
 the Spack in .tmp/spack, which the other integration test shares, is left as
@@ -9,7 +9,6 @@ store of its own, and pushes it signed to a mirror in a directory of its own.
 
 from __future__ import annotations
 
-import json
 import os
 import platform
 import shutil
@@ -20,8 +19,9 @@ from pathlib import Path
 from typing import Any
 
 import pytest
-from real_spack import SPACK, publish_keys, real_spack_env, signing_key
+import yaml
 from real_spack import keyring as signing_keyring
+from real_spack import local_scopes, on_path, publish_keys, signing_key, spack_env, spack_version
 from runner import ROOT, run_setup
 
 pytestmark = pytest.mark.integration
@@ -32,9 +32,7 @@ FINGERPRINT = "7500481A18F8F903534D953AC6F328B79BE7166C"
 COMPILER = "apple-clang" if platform.system() == "Darwin" else "gcc"
 
 
-@pytest.fixture(scope="module")
-def spack_env() -> dict[str, str]:
-    return real_spack_env()
+__all__ = ["spack_env", "spack_version"]  # fixtures, each run once per version
 
 
 @pytest.fixture
@@ -49,25 +47,26 @@ def keyring() -> Iterator[str]:
 def test_the_setup_role_against_the_real_spack(
     tmp_path: Path,
     spack_env: dict[str, str],
+    spack_version: str,
     keyring: str,
 ) -> None:
     # The other integration test turns the user and system scopes off, so as
     # not to read this machine's own. Here the user scope is what is written
     # to, so both are pointed at directories of the test's instead.
     env = {name: value for name, value in spack_env.items() if name != "SPACK_DISABLE_LOCAL_CONFIG"} | {
-        "SPACK_USER_CONFIG_PATH": str(tmp_path / "user"),
-        "SPACK_SYSTEM_CONFIG_PATH": str(tmp_path / "system"),
+        **local_scopes(tmp_path, spack_version),
         "SPACK_GNUPGHOME": keyring,
     }
-    spack = str(SPACK / "bin" / "spack")
+    spack = on_path(spack_env)
     variables = {"spack_setup_executable": spack, "spack_setup_scope": "user"}
 
     def user(section: str) -> dict[str, Any]:
+        # As YAML, which every Spack prints: 1.0 has no "config get --json".
         done = subprocess.run(
-            [spack, "config", "--scope", "user", "get", "--json", section],
+            [spack, "config", "--scope", "user", "get", section],
             env=env, capture_output=True, text=True, check=True,
         )  # fmt: skip
-        return json.loads(done.stdout)[section]
+        return yaml.safe_load(done.stdout)[section]
 
     def apply(steps: list[dict[str, Any]], check: bool = False) -> list[bool]:
         played = run_setup(steps, tmp_path, env=env, check=check, variables=variables)
@@ -176,6 +175,7 @@ def test_the_setup_role_against_the_real_spack(
 def test_the_setup_role_trusts_the_keys_a_mirror_publishes(
     tmp_path: Path,
     spack_env: dict[str, str],
+    spack_version: str,
     keyring: str,
 ) -> None:
     """A gpg_key step of from_mirrors: true, against a mirror that publishes a key (spec 003, SC-001).
@@ -184,11 +184,10 @@ def test_the_setup_role_trusts_the_keys_a_mirror_publishes(
     key made for the test, and the mirror's key index written.
     """
     env = {name: value for name, value in spack_env.items() if name != "SPACK_DISABLE_LOCAL_CONFIG"} | {
-        "SPACK_USER_CONFIG_PATH": str(tmp_path / "user"),
-        "SPACK_SYSTEM_CONFIG_PATH": str(tmp_path / "system"),
+        **local_scopes(tmp_path, spack_version),
         "SPACK_GNUPGHOME": keyring,
     }
-    spack = str(SPACK / "bin" / "spack")
+    spack = on_path(spack_env)
     built = tmp_path / "env"
     built.mkdir()
     (built / "spack.yaml").write_text(

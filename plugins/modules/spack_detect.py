@@ -80,6 +80,10 @@ options:
     default: spack
 notes:
   - Supports check mode only by doing nothing in it.
+  - On Spack 1.1, a configuration scope whose directory does not exist yet
+    (the user scope, C(~/.spack), or the system scope, C(/etc/spack)) cannot
+    be written to; Spack 1.1 leaves it out. The module fails and says so;
+    make the directory first. Spack 1.0 and 1.2 make it on the first write.
 """
 
 EXAMPLES = r"""

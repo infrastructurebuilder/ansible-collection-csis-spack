@@ -27,7 +27,9 @@ State keys used here:
   trusted      fingerprints Spack trusts
   mirror_keys  {mirror name: [fingerprints it publishes]}
   unmade_scopes  scopes whose directory does not exist until something is written
-  spack_like   "1.0" or "1.1": the key commands behave as in those versions
+               (as Spack 1.1, which has no such scope, they cannot be written)
+  version      what ``spack --version`` prints (fake_spack.py); "1.0..." and "1.1..."
+               make the commands that differ behave as in those versions
 """
 
 from __future__ import annotations
@@ -158,9 +160,15 @@ def mirror_table(state: dict[str, Any]) -> dict[str, Any]:
     return merged_section(state, "mirrors") | state.get("mirrors", {})
 
 
+def playing(state: dict[str, Any]) -> tuple[int, int]:
+    """The major and minor version the stand-in plays, from its state's ``version``."""
+    major, minor = state.get("version", "1.2.0").split()[0].split(".")[:2]
+    return int(major), int(minor)
+
+
 def old_spack(state: dict[str, Any]) -> bool:
-    """Say whether the stand-in plays Spack 1.0 or 1.1 (state key ``spack_like``)."""
-    return state.get("spack_like") in ("1.0", "1.1")
+    """Say whether the stand-in plays Spack 1.0 or 1.1, which neither ask before trusting nor take -y."""
+    return playing(state) < (1, 2)
 
 
 def trust(state: dict[str, Any], keys: list[str], answered: bool) -> int:
@@ -186,11 +194,27 @@ def handle(state: dict[str, Any], argv: list[str]) -> int | None:
     scope, args = take_scope(argv)
     if args[:1] == ["config"] and state.get("fail", {}).get("config"):
         return error("config failed on purpose", 2)
+    if (
+        scope in state.get("unmade_scopes", [])
+        and scope not in state.get("scopes", {})
+        and playing(state) == (1, 1)
+    ):
+        # Spack 1.1 has no scope whose directory does not exist: it refuses
+        # it for reading and writing alike, as argparse does a bad choice.
+        print(
+            f"spack {args[0]}: error: argument --scope: invalid choice: {scope!r} choose from:\n"
+            "    _builtin  defaults  site",
+            file=sys.stderr,
+        )
+        return 2
 
     if args[:3] == ["config", "get", "--json"] and len(args) == 4:
         name = args[3]
-        if scope in state.get("unmade_scopes", []) and scope not in state.get("scopes", {}):
-            # As Spack v1.2.0, for a scope whose directory does not exist yet.
+        # A scope whose directory does not exist yet: Spack 1.2 refuses to read
+        # it, in these words; 1.0 reads it as empty. (1.1's refusal, for
+        # every command, is above.)
+        unmade = scope in state.get("unmade_scopes", []) and scope not in state.get("scopes", {})
+        if unmade and playing(state) >= (1, 2):
             return error(f"the argument --scope={scope} must refer to an existing scope", 2)
         data = (
             merged_section(state, name)
@@ -290,6 +314,14 @@ def handle(state: dict[str, Any], argv: list[str]) -> int | None:
             print(f"{name:<12} [sb] {entry if isinstance(entry, str) else entry['url']}")
         return 0
 
+    if args[:3] == ["gpg", "list", "--trusted"] and "--fmt" in args and old_spack(state):
+        return error("unrecognized arguments: --fmt colons")
+    if args == ["gpg", "list", "--trusted"]:
+        # gpg's own listing, as Spack prints it without --fmt.
+        print(f"{state.get('gnupghome', '/tmp/gnupg')}/pubring.kbx\n----------------------------")
+        for fingerprint in state.get("trusted", []):
+            print(f"pub   rsa2048 2026-11-14 [SC]\n      {fingerprint}\nuid           [ultimate] Test\n")
+        return 0
     if args == ["gpg", "list", "--trusted", "--fmt", "colons"]:
         print("==> Trusted keys")
         for fingerprint in state.get("trusted", []):

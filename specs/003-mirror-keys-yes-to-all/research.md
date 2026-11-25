@@ -179,6 +179,84 @@ R4's mirror (two published keys, its key index written):
 3. This is for the operator to decide (Principle V); it is outside what
    this spec was asked to fix.
 
+## R7. Every option the modules pass, by Spack version (2026-11-25)
+
+Each command the modules run, and each option they give it, looked for in
+`spack <command> --help` of the real 1.0.0, 1.1.0 and 1.2.0 (no terminal, as
+under Ansible). Only the rows that differ:
+
+| Command | Option | 1.0.0 | 1.1.0 | 1.2.0 | Used for |
+| --- | --- | --- | --- | --- | --- |
+| `config get` | `--json` | no | yes | yes | reading configuration (`spack_config`, `spack_mirror`, `spack_command` `changes: config`, `spack_env`'s modules config) |
+| `gpg list` | `--fmt` (`colons`) | no | no | yes | reading the trusted keys (`spack_gpg_key`) |
+| `gpg trust` | `-y, --yes-to-all` | no | no | yes | answering the trust question (R2) |
+| `buildcache keys` | `-y, --yes-to-all` | no | no | yes | the same |
+
+Every other option is in all three: `buildcache check -m -o`;
+`buildcache push --unsigned --key --only --force --update-index`;
+`buildcache keys --install --trust`; `compiler find --scope`;
+`external find --scope --not-buildable --exclude -p`;
+`concretize --force -q --fresh`; `module tcl|lmod refresh -y --delete-tree`;
+`find --json`; `config --scope`; `config add -f`; `config remove`;
+`gpg list --trusted`; `location -r`;
+`mirror add --scope --type --signed --unsigned`; `mirror remove --scope`;
+`mirror list`; `spack -e` (1.0.0 lists it only under `spack --help --all`;
+`spack -e <env> …` works).
+
+Also seen: for a scope whose directory does not exist, 1.0.0 prints
+`config --scope user get mirrors` as `mirrors: {}` and exits 0; 1.1.0 fails
+with `invalid choice: 'user'`; 1.2.0 fails with `must refer to an existing
+scope`.
+
+**What this does not cover:** what the commands print and do. The modules
+read `find --json`'s records, `buildcache check -o`'s report, the messages
+of `buildcache push`, `mirror list`'s lines, `spack.lock`, the stamp in
+module files, what `config add` and `config remove` leave behind, and what
+detection writes. None of that is in a help text; only running the modules
+against 1.0.0 and 1.1.0 (FR-010) will show it.
+
+## R8. The integration tests against the real 1.0.0 and 1.1.0 (2026-11-25)
+
+`just integration`, every test once per version. 1.2.0 passed throughout.
+
+**Run 1, before any fix** (7 failed, 5 passed):
+
+| Version | Where it stopped | What Spack said |
+| --- | --- | --- |
+| 1.0.0 | `spack_env`, reading the modules configuration | `config get --json modules`: `unrecognized arguments: --json` |
+| 1.0.0 | the role's `config` step | `config --scope user get --json config`: the same |
+| 1.0.0, 1.1.0 | the tests' own signing-key helper | `gpg list --signing --fmt colons`: exit 1 (no `--fmt`) |
+| 1.1.0 | the role's `config` step | `argument --scope: invalid choice: 'user'` |
+| 1.1.0 | (passed) `spack_env` and `spack_buildcache_push` | concretize, install, module refresh, push, check, force: as on 1.2.0 |
+
+**Run 2, with the table and its fallbacks**:
+
+| Version | Where it stopped | What Spack said |
+| --- | --- | --- |
+| 1.0.0 | every read through `spack python -c` | `SyntaxError: multiple statements found while compiling a single statement`: `-c` takes one line; the code is now one line, joined with `;` |
+| 1.1.0 | writing to the user scope (`config --scope user add`, `mirror add --scope user`) | `invalid choice: 'user'`, as for reading |
+
+Why 1.1 refuses a scope it has no directory for: in 1.1.0 and 1.2.0 alike,
+`etc/spack/include.yaml` declares the user scope (`~/.spack`, or
+`SPACK_USER_CONFIG_PATH`) and the system scope (`/etc/spack`, or
+`SPACK_SYSTEM_CONFIG_PATH`) as `optional: true` includes. Spack 1.1 leaves an
+optional include whose directory does not exist out of its scopes
+altogether: `spack config scopes -p` does not list `user`, and no command
+can write to it. Spack 1.2 keeps the scope, empty, and makes the directory
+on the first write. With the directory made by hand, 1.1 writes to it
+(`config --scope user add config:build_jobs:2` wrote `config.yaml`).
+On a real machine the user scope's directory usually exists, since Spack's
+cache is there by default too; `/etc/spack` usually does not.
+
+For run 3 the tests make the user scope's directory first on 1.1 only,
+provisionally, until the operator decides what the modules do there.
+
+**Run 3**, with the one-line code, and the user scope's directory made first
+on 1.1 only: **12 passed** (every test on 1.0.0, 1.1.0 and 1.2.0; 35
+minutes). So, with the table of plan.md, the one difference left is 1.1's
+missing scope, for writing. Spack 1.0.0 reads a missing user scope as empty
+and writes to it, making its directory, as 1.2.0 does.
+
 ## Decisions
 
 - **Answer 1 replaced (operator, 2026-11-24, during planning):**

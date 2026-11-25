@@ -73,14 +73,31 @@ integration tests of T010 and T011).
 - [X] T013 [US1] In `plugins/modules/spack_gpg_key.py`, run `spack.answered(["gpg", "trust", path], words=2, consent=True)` and `spack.answered(["buildcache", "keys", "--install", "--trust"], words=2, consent=True)` in place of the two hard-coded commands (the `-y` at line 163 goes). Change reporting stays as it is (FR-002)
 - [X] T014 [US1] In `plugins/modules/spack_gpg_key.py` `DOCUMENTATION` (FR-005): `from_mirrors` trusts every key the mirrors publish without asking, with no fingerprint to check them against, and `key` with `fingerprint` is the way to trust one known key; both trusts pass `--yes-to-all` where Spack's help lists it (1.2 and later) and not on 1.0 and 1.1, which do not ask; the help is read once per trust; in check mode neither runs
 - [X] T015 [US1] Run `just test`, then `just full-test` (`Justfile`): T009, T010 and T011 pass. Commit tests and fix together, the message saying how the tests failed before the fix
-- [ ] T016 [US1] Once, by hand, against the real Spack 1.0.0 and 1.1.0 (quickstart.md §3; clones outside the repository, own user scope, cache and throwaway keyring; never Spack's own `etc/spack`): `spack_gpg_key` with `key: tests/fixtures/throwaway-mirror-key.pub` succeeds (a change, then none), and `from_mirrors: true` against a mirror with a published key succeeds. Record what was seen, with the date, as R6 in `specs/003-mirror-keys-yes-to-all/research.md` (SC-004)
+- [X] T016 [US1] Once, by hand, against the real Spack 1.0.0 and 1.1.0 (quickstart.md §3; clones outside the repository, own user scope, cache and throwaway keyring; never Spack's own `etc/spack`): `spack_gpg_key` with `key: tests/fixtures/throwaway-mirror-key.pub` succeeds (a change, then none), and `from_mirrors: true` against a mirror with a published key succeeds. Record what was seen, with the date, as R6 in `specs/003-mirror-keys-yes-to-all/research.md` (SC-004)
 
 **Checkpoint**: User Story 1 is done: the head node's failure is fixed, and
 the released `gpg trust -y` defect with it. It can ship alone.
 
 ---
 
-## Phase 4: User Story 2 — The tests would have caught it; `yes_to_all` (Priority: P2)
+## Phase 3b: User Story 3 — The collection works on every Spack it supports (Priority: P2)
+
+Added 2026-11-25 on the operator's word (spec Clarifications, Session
+2026-11-25), to be done before Phase 4.
+
+**Goal**: every module works on Spack 1.0, 1.1 and 1.2 (FR-009 to FR-011).
+
+**Independent Test**: `just integration` passes against the real 1.0.0,
+1.1.0 and 1.2.0.
+
+- [X] T039 [US3] In `tests/integration/real_spack.py`, run every integration test once per version in `SPACK_VERSIONS` (`v1.0.0`, `v1.1.0`, `v1.2.0`), each cloned once into `.tmp/spack-<version>` (the pin stays in `.tmp/spack`) with a user configuration and cache of its own; the test helpers find `spack` on the environment's `PATH`, and read the signing keys from gpg's own listing (FR-010)
+- [X] T040 [US3] Run `just integration` (`Justfile`) before any fix, and record each failure on 1.0.0 and 1.1.0 (research.md R8)
+- [X] T041 [US3] In `plugins/module_utils/spack.py`, the table `BEHAVIOUR` by (major, minor) and `behaviour()`, a newer Spack read as the last row; `Spack.does()`, `Spack.trusting()` (replacing the help check for the two trusts), `Spack.config_section()` (`config get --json`, or `spack python -c` on 1.0), `Spack.trusted_keys()` (`--fmt colons`, or gpg's own listing on 1.0 and 1.1), and `Configuration.get` reading a missing scope as empty in 1.1's words too (FR-009); `spack_gpg_key` uses them
+- [X] T042 [US3] The stand-in plays 1.0 and 1.1 by its `version` (`tests/unit/fake_spack.py`, `tests/unit/fake_spack_setup.py`), and unit tests hold the table, each fallback and `spack_gpg_key` on each version (`tests/unit/test_module_utils.py`, `tests/unit/test_spack_gpg_key.py`) (FR-011)
+- [X] T043 [US3] Run `just integration` (`Justfile`) again; for each failure left on 1.0.0 or 1.1.0, record it in research.md R8, add the row or fallback to `plugins/module_utils/spack.py` with a unit test, and repeat until it passes on all three
+- [X] T044 [US3] Run `just test`, then `just full-test` (`Justfile`). Commit
+
+## Phase 4: User Story 2 — The tests would have caught it; `yes_to_all` (Priority: P3)
 
 **Goal**: every module that runs Spack takes `yes_to_all`, and the `setup`
 role takes `spack_setup_yes_to_all` with a per-step override (FR-007); the
@@ -194,4 +211,9 @@ T024 spack_command.py   T025 spack_env.py   T026 push, mirror, detect
   role's default), were done in Phase 3: T009's tests pass `yes_to_all`, and
   the filter's test holds each kind's options to its module's.
 - **T016** found that the collection does not work with Spack 1.0 or 1.1 at
-  all (research.md, R6). Left open for the operator.
+  all (research.md, R6). The operator chose to fix it in this spec, as User
+  Story 3 (Phase 3b); T016 is met by T043's runs against the real 1.0.0 and
+  1.1.0.
+- **Phase 3b** replaced the help check for `spack_gpg_key`'s two trusts with
+  the version table (operator, 2026-11-25): `answered()` lost its `consent`,
+  the trusts read no help, and the stand-in's 1.1 help texts went.

@@ -98,6 +98,30 @@ answered(args, words=None, consent=False) -> args
 each command that changes something, and nothing changes for its queries
 (R1: none of them takes the option).
 
+### The version table (User Story 3, added 2026-11-25)
+
+`BEHAVIOUR` in `plugins/module_utils/spack.py`, keyed by (major, minor),
+says how each supported Spack does what the collection's own commands rely
+on and that differs between versions; a Spack newer than the last row is
+read as the last row. Every module already runs `spack --version` first, so
+`Spack.does(name)` needs no further call. The rows come from what the real
+1.0.0, 1.1.0 and 1.2.0 did (research.md R2, R7, R8):
+
+| Behaviour | 1.0 | 1.1 | 1.2 | Without it |
+| --- | --- | --- | --- | --- |
+| `config_json` | no | yes | yes | `spack python -c` prints the section as JSON (`spack.config.get`, or `CONFIG.get_config` for one scope) |
+| `gpg_colons` | no | no | yes | the fingerprints are read from `gpg list --trusted`'s own listing |
+| `trust_answers` | no | no | yes | `gpg trust` and `buildcache keys --trust` run without `--yes-to-all` |
+
+A missing scope is read as empty in 1.2's and 1.1's words; 1.0 prints it
+empty. The help check (`answered()`) stays only for `yes_to_all`.
+
+**Constitution, Principle III:** `spack python -c` is Spack's own command,
+and prints JSON; but what it runs is Spack's Python API, which the shared
+code otherwise does not use. It is used only where Spack 1.0 has no
+machine-readable command for the same data, is held by the integration
+tests against the real 1.0.0, and goes with the 1.0 row when the floor moves.
+
 ### The modules
 
 | Module | Commands given `answered()` | `consent` |

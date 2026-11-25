@@ -9,12 +9,15 @@ from pathlib import Path
 
 import pytest
 from ansible_collections.infrastructurebuilder.csis_spack.plugins.module_utils.spack import (
+    Configuration,
     Spack,
     SpackError,
+    behaviour,
     data_digest,
     external_specs,
     file_digest,
     fingerprints,
+    listed_fingerprints,
     lock_specs,
     merged,
     mirror_record,
@@ -290,21 +293,76 @@ def test_a_command_already_answered_is_left_alone_unread(spack: StandIn) -> None
     assert helps(spack) == []
 
 
-def test_consent_answers_with_the_flag_off(spack: StandIn) -> None:
-    assert answering(spack).answered(["gpg", "trust", "k.pub"], words=2, consent=True) == [
+V1_0 = "1.0.0 (73eaea13f381e3495299284856fd02a64e1d154c)"
+V1_1 = "1.1.0 (0c2be44e4ece21eb091ad5de4c97716b7c6d4c87)"
+
+
+def test_each_version_has_its_row_and_a_newer_one_the_last() -> None:
+    names = ("config_json", "gpg_colons", "trust_answers", "scope_needs_directory")
+    assert behaviour((1, 0, 0)) == dict(zip(names, (False, False, False, False), strict=True))
+    assert behaviour((1, 0, 4)) == behaviour((1, 0, 0))
+    assert behaviour((1, 1, 1)) == dict(zip(names, (True, False, False, True), strict=True))
+    assert behaviour((1, 2, 2)) == dict(zip(names, (True, True, True, False), strict=True))
+    assert behaviour((1, 3, 0)) == behaviour((1, 2, 0)) == behaviour((2, 0, 0))
+
+
+def test_a_trust_is_answered_where_spack_asks_with_the_flag_off(spack: StandIn) -> None:
+    assert answering(spack).trusting(["gpg", "trust", "k.pub"], words=2) == [
         "gpg",
         "trust",
         "--yes-to-all",
         "k.pub",
     ]
+    assert helps(spack) == []
 
 
 def test_spack_1_0_and_1_1_are_not_given_the_option_they_do_not_have(spack: StandIn) -> None:
-    spack.update(spack_like="1.1")
-    answers = answering(spack)
-    assert answers.answered(["gpg", "trust", "k.pub"], words=2, consent=True) == ["gpg", "trust", "k.pub"]
-    keys = ["buildcache", "keys", "--install", "--trust"]
-    assert answers.answered(keys, words=2, consent=True) == keys
+    for version in (V1_0, V1_1):
+        spack.update(version=version)
+        answers = answering(spack)
+        assert answers.trusting(["gpg", "trust", "k.pub"], words=2) == ["gpg", "trust", "k.pub"]
+        keys = ["buildcache", "keys", "--install", "--trust"]
+        assert answers.trusting(keys, words=2) == keys
+
+
+def test_configuration_is_read_as_json_or_through_spack_python_on_1_0(spack: StandIn) -> None:
+    spack.update(scopes={"site": {"config": {"build_jobs": 4}}})
+    assert answering(spack).config_section("config", scope="site") == {"build_jobs": 4}
+    assert spack.calls("config")[-1] == ["config", "--scope", "site", "get", "--json", "config"]
+    spack.update(version=V1_0)
+    assert answering(spack).config_section("config", scope="site") == {"build_jobs": 4}
+    assert answering(spack).config_section("config")["build_jobs"] == 4
+    python = spack.calls("python")
+    assert [call[:2] for call in python] == [["python", "-c"], ["python", "-c"]]
+    assert "get_config('config', scope='site')" in python[0][2]
+    assert "spack.config.get('config')" in python[1][2]
+
+
+def test_a_scope_not_made_yet_is_empty_in_each_versions_words(spack: StandIn) -> None:
+    for version in (V1_0, V1_1, "1.2.0"):
+        spack.update(version=version, unmade_scopes=["user"])
+        assert Configuration(answering(spack), "user").get("mirrors") == {}, version
+
+
+def test_the_trusted_keys_are_read_without_fmt_on_1_0_and_1_1(spack: StandIn) -> None:
+    keys = ["7500481A18F8F903534D953AC6F328B79BE7166C", "E0C894426081BF7A184E2AC8F2D4DFC4FD63F7FB"]
+    spack.update(trusted=keys)
+    assert answering(spack).trusted_keys() == keys
+    for version in (V1_0, V1_1):
+        spack.update(version=version)
+        assert answering(spack).trusted_keys() == keys
+    assert spack.calls("gpg", "list")[-1] == ["gpg", "list", "--trusted"]
+
+
+def test_gpgs_own_listing_gives_its_fingerprints() -> None:
+    # As Spack 1.1.0 printed it for the throwaway key (research.md, R6).
+    printed = (
+        "/tmp/csis-q-6X9K/pubring.kbx\n----------------------------\n"
+        "pub   rsa2048 2026-11-14 [SC]\n      7500481A18F8F903534D953AC6F328B79BE7166C\n"
+        "uid           [ultimate] Test Mirror <test@example.invalid>\n\n"
+    )
+    assert listed_fingerprints(printed) == ["7500481A18F8F903534D953AC6F328B79BE7166C"]
+    assert listed_fingerprints("") == []
 
 
 def test_a_help_is_read_once_in_a_run(spack: StandIn) -> None:

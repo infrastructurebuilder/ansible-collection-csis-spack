@@ -1,4 +1,4 @@
-"""The modules against the real Spack v1.2.0, on the local machine (just full-test).
+"""The modules against the real Spack 1.0.0, 1.1.0 and 1.2.0, on the local machine (just full-test).
 
 Spack is cloned once into .tmp/spack, and keeps its user configuration and
 caches in .tmp/ too, so nothing of the local machine's own Spack is read or
@@ -11,18 +11,16 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
-from real_spack import keyring, publish_keys, real_spack_env, signing_key
+from real_spack import keyring, local_scopes, publish_keys, signing_key, spack_env, spack_version
 from runner import run_module
 
 pytestmark = pytest.mark.integration
+__all__ = ["spack_env", "spack_version"]  # fixtures, each run once per version
 
 
-@pytest.fixture(scope="module")
-def spack_env() -> dict[str, str]:
-    return real_spack_env()
-
-
-def test_both_modules_against_the_real_spack(tmp_path: Path, spack_env: dict[str, str]) -> None:
+def test_both_modules_against_the_real_spack(
+    tmp_path: Path, spack_env: dict[str, str], spack_version: str
+) -> None:
     env = tmp_path / "env"
     env.mkdir()
     modules = tmp_path / "modules"
@@ -63,7 +61,7 @@ def test_both_modules_against_the_real_spack(tmp_path: Path, spack_env: dict[str
     assert before["concretized"] is True
     assert "zlib" in [item["spec"] for item in before["installed"]]
     assert not (env / "spack.lock").exists(), "check mode wrote the environment's lock"
-    assert before["spack_version"] == "1.2.0"
+    assert before["spack_version"] == spack_version.lstrip("v")
 
     first = run("spack_env", build)
     assert first["changed"] is True
@@ -134,7 +132,7 @@ def test_both_modules_against_the_real_spack(tmp_path: Path, spack_env: dict[str
 
 
 def test_the_keys_a_mirror_publishes_are_trusted_with_no_prompt(
-    tmp_path: Path, spack_env: dict[str, str]
+    tmp_path: Path, spack_env: dict[str, str], spack_version: str
 ) -> None:
     """spack_gpg_key from_mirrors against a mirror that publishes keys (spec 003, FR-003).
 
@@ -163,8 +161,7 @@ def test_the_keys_a_mirror_publishes_are_trusted_with_no_prompt(
         # site scope in .tmp/spack (research.md, R4).
         local = {name: value for name, value in spack_env.items() if name != "SPACK_DISABLE_LOCAL_CONFIG"}
         truster = local | {
-            "SPACK_USER_CONFIG_PATH": str(tmp_path / "user"),
-            "SPACK_SYSTEM_CONFIG_PATH": str(tmp_path / "system"),
+            **local_scopes(tmp_path, spack_version),
             "SPACK_GNUPGHOME": trusting,
         }
         first_key = signing_key(spack_env, signing, "Key A")
