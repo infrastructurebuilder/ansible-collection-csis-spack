@@ -2,7 +2,7 @@
 # The collection's metadata, read by `ansible-galaxy collection build`.
 namespace: infrastructurebuilder
 name: csis_spack
-version: 0.0.2
+version: 0.0.3
 readme: README.md
 authors:
   - mykelalvis

@@ -1,8 +1,8 @@
 # Changelog
 
-## Unreleased
+## 0.0.3 (2026-11-25)
 
-To be 0.0.3 ([specs/003-mirror-keys-yes-to-all](specs/003-mirror-keys-yes-to-all/spec.md)).
+[specs/003-mirror-keys-yes-to-all](specs/003-mirror-keys-yes-to-all/spec.md).
 A playbook written for 0.0.2 runs unchanged.
 
 ### Fixed
