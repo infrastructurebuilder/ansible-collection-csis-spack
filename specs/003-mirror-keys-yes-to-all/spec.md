@@ -8,7 +8,12 @@
 operator's instruction ("write a new spec for the collection project"), and
 committed on `develop`; to be clarified, planned and built in a session of
 this repository's own. Clarified on `develop` and planned on its feature
-branch, 2026-11-24.
+branch, 2026-11-24. **Done 2026-11-25** on
+`feature/mirror-keys-yes-to-all`: every task but T038 ticked, and
+`just full-test` passed (270 unit tests; 15 integration tests, each of five
+run against the real Spack 1.0.0, 1.1.0 and 1.2.0; `ansible-test sanity`;
+Galaxy's import checks). Not yet merged into `develop` or released: both on
+the operator's word (T038).
 
 **Input**: a failure on a real head node, in the Cloud-Sandbox workshop's
 spec 002 (a RHEL 10 build cache), 2026-11-24. A play applying the `setup`
@@ -199,6 +204,10 @@ and pass with the fix.
 - Spack 1.0 or 1.1, whose `buildcache keys` and `gpg trust` have no
   `--yes-to-all` and never ask: both run without the option, and trust as
   they do today. Nothing is answered on stdin.
+- Spack 1.1, asked to write to a configuration scope whose directory does
+  not exist yet (the user or system scope): Spack 1.1 has no such scope; the
+  module fails, naming the scope and the directory to make, and does not
+  make it (FR-009). Reading it gives an empty section, as on 1.0 and 1.2.
 
 ## Requirements *(mandatory)*
 

@@ -1,5 +1,54 @@
 # Changelog
 
+## Unreleased
+
+To be 0.0.3 ([specs/003-mirror-keys-yes-to-all](specs/003-mirror-keys-yes-to-all/spec.md)).
+A playbook written for 0.0.2 runs unchanged.
+
+### Fixed
+
+- `spack_gpg_key` with `from_mirrors: true` failed against a mirror that
+  publishes a key, on Spack 1.2, as it did on a RHEL 10 head node:
+  `spack buildcache keys --install --trust failed (exit 3): ==> Trust key:
+  <fingerprint> [y/N] ... Error: EOF when reading a line`. Spack 1.2 asks
+  before trusting each key, even one it trusts already, and under Ansible
+  there is no terminal to answer from. Both of the module's trusts now pass
+  `--yes-to-all` on Spack 1.2 and later. The `setup` role's `gpg_key` steps
+  of `from_mirrors: true` work again; the Cloud Sandbox can go back to them
+  from its `command` steps.
+- The collection did not work with Spack 1.0 or 1.1, which it says it
+  supports; only 1.2.0 had been tested. `spack_gpg_key` with `key` failed
+  there with `unrecognized arguments: -y`, and every module that read the
+  configuration (`config get --json`, not in 1.0) or the trusted keys
+  (`gpg list --fmt colons`, not in 1.0 or 1.1) failed too. The modules now
+  follow the version they find, from a table in the shared code
+  (`BEHAVIOUR`): on 1.0 the configuration is read through Spack's own
+  `spack python -c`, and on 1.0 and 1.1 the trusted keys from gpg's own
+  listing.
+- A configuration scope whose directory does not exist yet is read as empty
+  on Spack 1.1 too. Spack 1.1 cannot write to it, as it has no such scope;
+  a module then fails, saying which directory to make (the modules do not
+  make it).
+
+### Added
+
+- `yes_to_all`, on every module that runs Spack, and
+  `spack_setup_yes_to_all` (with a `yes_to_all` of a step's own, which
+  overrides it) on the `setup` role; off by default. On, each Spack command
+  run to change something is given `--yes-to-all` where the help of the
+  Spack on the node lists it, which answers "yes" to every confirmation it
+  asks, removals and overwrites included. Off, nothing is run differently.
+
+### Tests
+
+- The integration tests run against the real Spack 1.0.0, 1.1.0 and 1.2.0,
+  each cloned once into `.tmp/`; two new ones trust the keys a mirror made
+  in the test publishes, through the module and through the role. The
+  stand-in `spack` asks before trusting a key, as Spack 1.2 does, and plays
+  1.0 and 1.1 by its `--version`.
+- `just integration` runs the integration tests alone; `just format` runs
+  ruff's formatter.
+
 ## 0.0.2 (2026-11-19)
 
 Documentation only; nothing in the modules, the role or the filters

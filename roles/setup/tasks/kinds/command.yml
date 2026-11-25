@@ -11,5 +11,6 @@
     creates: "{{ spack_setup_step.creates | default(omit) }}"
     sections: "{{ spack_setup_step.sections | default(omit) }}"
     env: "{{ spack_setup_step.env | default(omit) }}"
+    yes_to_all: "{{ spack_setup_step.yes_to_all | default(spack_setup_yes_to_all) }}"
   environment: "{{ spack_setup_step_environment }}"
   register: spack_setup_done

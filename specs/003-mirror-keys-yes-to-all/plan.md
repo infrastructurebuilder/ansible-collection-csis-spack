@@ -42,8 +42,9 @@ the tests)
 one module's commands, the shared runner and one role's interface
 
 **Performance Goals**: a help call is about 0.9 s on the local machine. With
-`yes_to_all` off, no module reads any help except `spack_gpg_key`, which reads
-one help for each trust command it runs (`gpg trust`, `buildcache keys`)
+`yes_to_all` off, no module reads any help; `spack_gpg_key`'s trusts read
+none either, since the version table decides (User Story 3). `just full-test`
+takes about 45 minutes, the integration tests running once per Spack version
 
 **Constraints**: a playbook written for 0.0.2 runs unchanged and does what it
 did, except that the two trust commands now succeed where they failed;
@@ -51,7 +52,8 @@ nothing is ever answered on stdin; Spack is never run through a shell
 
 **Scale/Scope**: `plugins/module_utils/spack.py`; 7 modules; the role's
 defaults, 5 kind files, its filter and README; the stand-in `spack`; unit
-tests; 2 integration tests; `CHANGELOG.md`; the README if it lists options
+tests; the integration tests, now run against three Spack versions, and 3
+new ones; `CHANGELOG.md`; the README
 
 ## Constitution Check
 
@@ -61,7 +63,7 @@ tests; 2 integration tests; `CHANGELOG.md`; the README if it lists options
 | --- | --- | --- |
 | I. A Site's Choices Are Configuration, Not Code | `yes_to_all` is a site's choice, given as a module option or a role variable; its default is off. No command list of any site is built in. | Pass |
 | II. A Repeat Run Changes Nothing, and Says So | Change reporting is untouched: `spack_gpg_key` still compares `gpg list --trusted` before and after (FR-002); R4 shows a second run trusts nothing new. Check mode runs no command that changes anything; a help call changes nothing. | Pass |
-| III. Written to What Spack Does | Tried against the real 1.0.0, 1.1.0 and 1.2.0 before design (R1 to R4). The check reads Spack's own help, not a list from memory. The stand-in's help follows what the real one printed. The pin stays 1.2.0. | Pass |
+| III. Written to What Spack Does | Tried against the real 1.0.0, 1.1.0 and 1.2.0 before design (R1 to R4), and the integration tests now run against all three (FR-010, R8). The version table holds only what those three did; the help check, for `yes_to_all`, reads Spack's own help. `spack python -c` is used only where 1.0 has no machine-readable command (weighed under "The version table"). The stand-in follows what the real ones printed. The pin stays 1.2.0. | Pass |
 | IV. Acceptance Tests Run Through the Justfile | Unit tests first, seen to fail; two integration tests that fail on 0.0.2 (SC-002); `just test` after each change, `just full-test` before done. No new tool is called outside the `Justfile`. | Pass |
 | V. The Operator Decides | Six answers are in the spec's Clarifications, one of them changed during planning on the operator's word. The release is 0.0.3 (operator); when to cut it is asked then. Committed locally. | Pass |
 | The ATTIC | Not consulted. (`plugins/module_utils/spack.py` has a comment pointing into the ATTIC; it was not followed.) | Pass |
@@ -71,20 +73,21 @@ No violations; Complexity Tracking is not needed.
 **Re-checked after the design below:** unchanged. One point was weighed under
 Principle II: `spack_command` may be given `--yes-to-all` in a real run, but
 in check mode it runs nothing, as today, so the flag cannot make a preview
-act.
+act. Re-checked again on 2026-11-25 after User Story 3's design (the version
+table, `spack python -c` on 1.0, the tests on three versions): unchanged.
 
 ## Design
 
 ### The check, in `plugins/module_utils/spack.py`
 
 `Spack(module, executable, yes_to_all=False)` keeps the flag, and a cache of
-the help it has read in this run. One new method:
+the help it has read in this run. One new method, for `yes_to_all`:
 
 ```text
-answered(args, words=None, consent=False) -> args
+answered(args, words=None) -> args
 ```
 
-- Adds `--yes-to-all` only when `consent or self.yes_to_all`, and the
+- Adds `--yes-to-all` only when `self.yes_to_all`, and the
   arguments have neither `-y` nor `--yes-to-all` already, and the help of the
   command lists the option (the `-y, --yes-to-all` line, R1).
 - `words` is how many of `args` are the command (`["gpg", "trust", path]` is
@@ -124,15 +127,15 @@ tests against the real 1.0.0, and goes with the 1.0 row when the floor moves.
 
 ### The modules
 
-| Module | Commands given `answered()` | `consent` |
+| Module | Commands answered | How |
 | --- | --- | --- |
-| `spack_gpg_key` | `gpg trust <file>` (the hard-coded `-y` goes), `buildcache keys --install --trust` | always: asking for the key, or for `from_mirrors`, is the consent |
-| `spack_env` | `concretize`, `install`, `module <system> refresh` (keeps its own `-y`) | the flag |
-| `spack_buildcache_push` | `buildcache push` | the flag |
-| `spack_mirror` | `mirror add`, `mirror remove` | the flag |
-| `spack_config` | `config add`, `config remove`, through the shared `Configuration` | the flag |
-| `spack_detect` | `compiler find`, `external find` | the flag |
-| `spack_command` | the site's `args`, words found by walking | the flag |
+| `spack_gpg_key` | `gpg trust <file>` (the hard-coded `-y` goes), `buildcache keys --install --trust` | `trusting()`, by the version table, whatever `yes_to_all` says: asking for the key, or for `from_mirrors`, is the consent |
+| `spack_env` | `concretize`, `install`, `module <system> refresh` (keeps its own `-y`) | `answered()`, when `yes_to_all` |
+| `spack_buildcache_push` | `buildcache push` | the same |
+| `spack_mirror` | `mirror add`, `mirror remove` | the same |
+| `spack_config` | `config add`, `config remove`, through the shared `Configuration` (words 1: `config`'s help decides) | the same |
+| `spack_detect` | `compiler find`, `external find` | the same |
+| `spack_command` | the site's `args`, words found by walking | the same |
 
 Each takes `yes_to_all` (bool, default false), passed to `Spack(...)`.
 `spack_gpg_key` takes it too, for one shape across the modules, and says that
@@ -154,9 +157,12 @@ does not take it. The option's documentation is written once per module, as
 ### The stand-in `spack`
 
 `tests/unit/fake_spack.py` and `fake_spack_setup.py` answer `--help` from
-texts as 1.2.0 prints them, for the commands the modules run; a state key
-makes `gpg trust` and `buildcache keys` behave as in 1.0 and 1.1 (no option
-in the help, `unrecognized arguments: -y`, exit 1, when given it). `gpg trust`
+texts as 1.2.0 prints them, for the commands the modules run. Its `version`
+state makes it play 1.0 or 1.1 where they differ (User Story 3): no
+`--yes-to-all` on the trusts (`unrecognized arguments: -y`, exit 1), no
+trust question, no `gpg list --fmt`, no `config get --json` on 1.0 (with
+`spack python -c` read as the `config get` it stands for), and 1.1's
+refusal of a scope whose directory is missing. `gpg trust`
 is accepted with `--yes-to-all`, `-y` or neither. Every call is recorded, so
 a test can see which helps were read.
 
@@ -168,8 +174,9 @@ a test can see which helps were read.
   the mirror added in a user scope of the test's own; `spack_gpg_key`
   `from_mirrors` into an empty keyring: a change, then none; zlib pushed again
   with `--force` and the second key, the index again; a change for the second
-  key only. The help check is shown reading `gpg trust` (has it) and
-  `mirror add` (has not).
+  key only. A third test shows the help check reading the real Spack's help:
+  `install` (has it), `mirror add` (has not), `module tcl refresh` (walked
+  to), `config --scope user add` (only `config` read).
 - `tests/integration/test_real_setup.py`: a fake install and a signed push of
   its own, and one `gpg_key` step of `from_mirrors: true`, run twice; its
   docstring says what it now builds and pushes.
@@ -199,7 +206,7 @@ specs/003-mirror-keys-yes-to-all/
 ```text
 plugins/module_utils/spack.py        # Spack(yes_to_all=...), answered(), the help cache
 plugins/modules/
-├── spack_gpg_key.py                 # both trusts through answered(consent=True); docs (FR-005)
+├── spack_gpg_key.py                 # both trusts through trusting(), by version; docs (FR-005)
 ├── spack_env.py                     # yes_to_all; answered()
 ├── spack_buildcache_push.py         # yes_to_all; answered()
 ├── spack_mirror.py                  # yes_to_all; answered()
@@ -213,7 +220,7 @@ roles/setup/
 └── README.md
 tests/unit/
 ├── fake_spack.py, fake_spack_setup.py   # --help, the 1.0/1.1 behaviour
-├── fake_spack_help.json                 # new: help texts as Spack 1.2.0 and 1.1.0 print them
+├── fake_spack_help.json                 # new: help texts as Spack 1.2.0 prints them
 ├── test_module_utils.py                 # answered()
 ├── test_spack_gpg_key.py                # new forms (FR-004)
 ├── test_spack_*.py                      # yes_to_all on and off, per module

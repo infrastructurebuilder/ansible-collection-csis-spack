@@ -30,19 +30,22 @@ integration tests fail at the `from_mirrors` step with
 `Trust key: <fingerprint> [y/N] ==> Error: EOF when reading a line` (exit 3),
 the head node's failure ([research.md](research.md), R4).
 
-## 3. Spack 1.0 and 1.1, once, by hand (SC-004)
+## 3. Spack 1.0, 1.1 and 1.2 (SC-004, FR-010)
 
-The integration tests stay pinned to 1.2.0. To see the other two supported
-versions once, clone them outside the repository and run the module against
-each with a throwaway keyring, as [research.md](research.md) did (R2):
+The integration tests run once for each version in
+`tests/integration/real_spack.py`'s `SPACK_VERSIONS`, each cloned into
+`.tmp/` the first time (the network is needed then, and each version's
+first concretization bootstraps its solver):
 
-- `key:` with `tests/fixtures/throwaway-mirror-key.pub`: succeeds, a
-  change, then no change. 0.0.2's module fails here with
-  `unrecognized arguments: -y`.
-- `from_mirrors: true` against a mirror with a published key (R4's steps):
-  succeeds without `--yes-to-all`.
+```sh
+just integration   # the integration tests alone, about 35 minutes for the three
+just full-test     # everything, about 45 minutes
+```
 
-Record what was seen in [research.md](research.md), with the date.
+Expected: every test passes on each version, with the same changes
+reported. On 1.1 the tests make the user scope's directory first, as a site
+must (Spack 1.1 has no scope whose directory is missing; research.md, R8).
+0.0.2's modules fail on 1.0 and 1.1 (research.md, R6).
 
 ## 4. A play, as a site writes it
 

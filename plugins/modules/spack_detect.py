@@ -78,6 +78,19 @@ options:
       - The Spack executable, as a path or a name looked up on C(PATH).
     type: str
     default: spack
+  yes_to_all:
+    description:
+      - Answer "yes" to every confirmation Spack asks of a command this module
+        runs to change something, by giving that command C(--yes-to-all) where
+        the installed Spack's help for it lists the option. The help is read
+        only when this is true, once for each command.
+      - That includes confirmations before removing or overwriting something.
+        Without it, such a confirmation fails the task, since Ansible gives
+        Spack no terminal to answer from.
+      - A command that already has C(-y) or C(--yes-to-all) is left as it is.
+    type: bool
+    default: false
+    version_added: 0.0.3
 notes:
   - Supports check mode only by doing nothing in it.
   - On Spack 1.1, a configuration scope whose directory does not exist yet
@@ -161,6 +174,7 @@ def main():
             require=dict(type="list", elements="str", default=[]),
             scope=dict(type="str", default="site"),
             spack=dict(type="str", default="spack"),
+            yes_to_all=dict(type="bool", default=False),
         ),
         supports_check_mode=True,
     )
@@ -170,7 +184,7 @@ def main():
     if not params["compilers"] and not externals:
         module.fail_json(msg="nothing to look for: set compilers, externals, or both", **result)
     try:
-        spack = Spack(module, params["spack"])
+        spack = Spack(module, params["spack"], yes_to_all=params["yes_to_all"])
         result["spack_version"] = ".".join(str(part) for part in spack.require_version())
         if module.check_mode:
             result["previewed"] = False
@@ -178,7 +192,8 @@ def main():
         config = Configuration(spack, params["scope"])
         before = config.get("packages")
         if params["compilers"]:
-            spack.run(["compiler", "find", *scope_args(params["scope"]), *params["paths"]])
+            find = ["compiler", "find", *scope_args(params["scope"]), *params["paths"]]
+            spack.run(spack.answered(find, words=2))
         if externals:
             args = ["external", "find", *scope_args(params["scope"])]
             if params["not_buildable"]:
@@ -187,7 +202,7 @@ def main():
                 args += ["--exclude", name]
             for path in params["paths"]:
                 args += ["-p", path]
-            spack.run([*args, *names])
+            spack.run(spack.answered([*args, *names], words=2))
         after = config.get("packages")
         was, now = set(external_specs(before)), set(external_specs(after))
         result["added"], result["removed"] = sorted(now - was), sorted(was - now)

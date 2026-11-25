@@ -59,6 +59,19 @@ options:
       - The Spack executable, as a path or a name looked up on C(PATH).
     type: str
     default: spack
+  yes_to_all:
+    description:
+      - Answer "yes" to every confirmation Spack asks of a command this module
+        runs to change something, by giving that command C(--yes-to-all) where
+        the installed Spack's help for it lists the option. The help is read
+        only when this is true, once for each command.
+      - That includes confirmations before removing or overwriting something.
+        Without it, such a confirmation fails the task, since Ansible gives
+        Spack no terminal to answer from.
+      - A command that already has C(-y) or C(--yes-to-all) is left as it is.
+    type: bool
+    default: false
+    version_added: 0.0.3
 notes:
   - Supports check mode.
   - On Spack 1.1, a configuration scope whose directory does not exist yet
@@ -147,6 +160,7 @@ def main():
             scope=dict(type="str", default="site"),
             state=dict(type="str", choices=["present", "absent"], default="present"),
             spack=dict(type="str", default="spack"),
+            yes_to_all=dict(type="bool", default=False),
         ),
         required_if=[("state", "present", ["url"])],
         supports_check_mode=True,
@@ -154,7 +168,7 @@ def main():
     params = cast("dict[str, Any]", module.params)
     result = dict(changed=False, action="none", mirror={})  # type: dict[str, Any]
     try:
-        spack = Spack(module, params["spack"])
+        spack = Spack(module, params["spack"], yes_to_all=params["yes_to_all"])
         result["spack_version"] = ".".join(str(part) for part in spack.require_version())
         config = Configuration(spack, params["scope"])
         mirrors = config.get("mirrors")
@@ -165,16 +179,16 @@ def main():
             if present:
                 result["action"] = "removed"
                 if not module.check_mode:
-                    spack.run(remove)
+                    spack.run(spack.answered(remove, words=2))
         elif not present:
             result["action"] = "added"
             if not module.check_mode:
-                spack.run(add_args(params))
+                spack.run(spack.answered(add_args(params), words=2))
         elif differs(current, wanted_record(params)):
             result["action"] = "replaced"
             if not module.check_mode:
-                spack.run(remove)
-                spack.run(add_args(params))
+                spack.run(spack.answered(remove, words=2))
+                spack.run(spack.answered(add_args(params), words=2))
         if module.check_mode:
             result["mirror"] = current if params["state"] == "present" and result["action"] == "none" else {}
         else:

@@ -111,3 +111,10 @@ def test_labels() -> None:
     )
     assert setup_label({"kind": "gpg_key", "key": "/k.pub"}) == "gpg_key: /k.pub"
     assert setup_label("nonsense") == "?"
+
+
+def test_yes_to_all_is_an_option_of_every_kind_that_runs_spack() -> None:
+    for kind in ("config", "mirror", "gpg_key", "detect", "command"):
+        assert "yes_to_all" in KINDS[kind]["optional"], kind
+    problems = setup_problems([{"kind": "environment", "name": "e", "shell": "true", "yes_to_all": True}])
+    assert problems == ["step 1 (environment): 'yes_to_all' is not an option of this kind"]

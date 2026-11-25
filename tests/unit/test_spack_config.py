@@ -202,3 +202,21 @@ def test_a_mapping_that_keeps_other_keys_is_not_removed(spack: Spack) -> None:
     )
     assert result["paths"] == ["config:install_tree:padded_length"]
     assert spack.scope("user", "config") == {"install_tree": {"root": "/opt/spack/store"}}
+
+
+def helps(spack: Spack) -> list[list[str]]:
+    """The help calls the stand-in saw, as the command words each was for."""
+    return [call[:-1] for call in spack.calls() if call[-1:] == ["--help"]]
+
+
+def test_yes_to_all_reads_the_config_help_and_adds_nothing_it_does_not_list(spack: Spack) -> None:
+    # "config" takes --scope before its subcommand, so its own help decides (research.md, R5).
+    result = config(spack, {"config": {"build_jobs": 4}}, yes_to_all=True)
+    assert result["failed"] is False, result.get("msg")
+    assert helps(spack) == [["config"]]
+    assert all("--yes-to-all" not in call for call in spack.calls("config"))
+
+
+def test_without_yes_to_all_a_configuration_reads_no_help(spack: Spack) -> None:
+    config(spack, {"config": {"build_jobs": 4}})
+    assert helps(spack) == []

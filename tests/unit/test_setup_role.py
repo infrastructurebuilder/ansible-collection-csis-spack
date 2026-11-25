@@ -192,3 +192,22 @@ def test_check_mode_previews_what_is_declared_and_runs_no_discovery(spack: Spack
     assert spack.state.get("scopes", {}) == {}
     assert spack.calls("compiler") == []
     assert spack.calls("mirror", "add") == []
+
+
+def gc_calls(spack: Spack) -> list[list[str]]:
+    return [call for call in spack.calls("gc") if call[-1] != "--help"]
+
+
+def test_the_roles_yes_to_all_answers_every_step(spack: Spack) -> None:
+    steps = [{"kind": "command", "args": ["gc"], "changes": "always"}]
+    played = spack.setup(steps, spack_setup_yes_to_all=True)
+    assert played.rc == 0, played.output
+    assert gc_calls(spack) == [["gc", "--yes-to-all"]]
+
+
+def test_a_steps_own_yes_to_all_overrides_the_roles(spack: Spack) -> None:
+    off = [{"kind": "command", "args": ["gc"], "changes": "always", "yes_to_all": False}]
+    assert spack.setup(off, spack_setup_yes_to_all=True).rc == 0
+    on = [{"kind": "command", "args": ["gc"], "changes": "always", "yes_to_all": True}]
+    assert spack.setup(on).rc == 0
+    assert gc_calls(spack) == [["gc"], ["gc", "--yes-to-all"]]

@@ -109,24 +109,24 @@ reads no help.
 
 ### Tests for User Story 2 (written first; they must fail before T024)
 
-- [ ] T017 [P] [US2] In `tests/unit/test_spack_command.py`: `yes_to_all: true` with `args: [gc]` runs `["gc", "--yes-to-all"]`; with it off runs `["gc"]` and reads no help; `args: [gc, -y]` is run as written; `args: [mirror, list]` with the flag on runs as written after reading `mirror`, `mirror list`; in check mode nothing runs and no help is read
-- [ ] T018 [P] [US2] In `tests/unit/test_spack_env.py`: with `yes_to_all: true`, `install` is run with `--yes-to-all` straight after `install` and before `install_args`, `concretize` is run as written, and `module tcl refresh` keeps its single `-y`; with it off, the calls are exactly those of today and include no `--help`
-- [ ] T019 [P] [US2] In `tests/unit/test_spack_buildcache_push.py`, `tests/unit/test_spack_mirror.py`, `tests/unit/test_spack_config.py` and `tests/unit/test_spack_detect.py`: with `yes_to_all: true`, the help of each command that changes something is read and nothing is added (none takes it in 1.2.0, research.md R1); with it off, no help is read and the calls are those of today
-- [ ] T020 [P] [US2] In `tests/unit/test_setup_filter.py`: `yes_to_all` is accepted on steps of kind `config`, `mirror`, `gpg_key`, `detect` and `command`, and refused on `environment` as "not an option of this kind" (`test_each_kinds_options_are_its_modules_options` must keep passing)
-- [ ] T021 [P] [US2] In `tests/unit/test_setup_role.py`: the defaults hold `spack_setup_yes_to_all: false`; with `spack_setup_yes_to_all: true`, a `command` step `args: [gc]` runs `gc --yes-to-all`; a step's `yes_to_all: false` overrides the role's `true`; a step's `true` with the role's default runs `gc --yes-to-all`
-- [ ] T022 [P] [US2] In `tests/integration/test_real_spack.py`, add a test of the help check against the real Spack 1.2.0, through `plugins/module_utils/spack.py` with a minimal module object that runs the real `spack`: `answered(["gpg", "trust", "f"], words=2, consent=True)` adds the option; `answered(["mirror", "add", "n", "u"], words=2, consent=True)` does not; with `yes_to_all=True`, `answered(["module", "tcl", "refresh"])` walks to `refresh` and adds it; `answered(["config", "--scope", "user", "add", "a:b"])` reads only `config` and adds nothing (FR-007)
-- [ ] T023 [US2] Run `just test` (`Justfile`) and see T017–T021 fail because the option and the variable do not exist; run the integration test of T022 through `just full-test` and see it pass already (it tests T007's code against the real Spack)
+- [X] T017 [P] [US2] In `tests/unit/test_spack_command.py`: `yes_to_all: true` with `args: [gc]` runs `["gc", "--yes-to-all"]`; with it off runs `["gc"]` and reads no help; `args: [gc, -y]` is run as written; `args: [mirror, list]` with the flag on runs as written after reading `mirror`, `mirror list`; in check mode nothing runs and no help is read
+- [X] T018 [P] [US2] In `tests/unit/test_spack_env.py`: with `yes_to_all: true`, `install` is run with `--yes-to-all` straight after `install` and before `install_args`, `concretize` is run as written, and `module tcl refresh` keeps its single `-y`; with it off, the calls are exactly those of today and include no `--help`
+- [X] T019 [P] [US2] In `tests/unit/test_spack_buildcache_push.py`, `tests/unit/test_spack_mirror.py`, `tests/unit/test_spack_config.py` and `tests/unit/test_spack_detect.py`: with `yes_to_all: true`, the help of each command that changes something is read and nothing is added (none takes it in 1.2.0, research.md R1); with it off, no help is read and the calls are those of today
+- [X] T020 [P] [US2] In `tests/unit/test_setup_filter.py`: `yes_to_all` is accepted on steps of kind `config`, `mirror`, `gpg_key`, `detect` and `command`, and refused on `environment` as "not an option of this kind" (`test_each_kinds_options_are_its_modules_options` must keep passing)
+- [X] T021 [P] [US2] In `tests/unit/test_setup_role.py`: the defaults hold `spack_setup_yes_to_all: false`; with `spack_setup_yes_to_all: true`, a `command` step `args: [gc]` runs `gc --yes-to-all`; a step's `yes_to_all: false` overrides the role's `true`; a step's `true` with the role's default runs `gc --yes-to-all`
+- [X] T022 [P] [US2] In `tests/integration/test_real_spack.py`, add a test of the help check against the real Spack 1.2.0, through `plugins/module_utils/spack.py` with a minimal module object that runs the real `spack`: `answered(["gpg", "trust", "f"], words=2, consent=True)` adds the option; `answered(["mirror", "add", "n", "u"], words=2, consent=True)` does not; with `yes_to_all=True`, `answered(["module", "tcl", "refresh"])` walks to `refresh` and adds it; `answered(["config", "--scope", "user", "add", "a:b"])` reads only `config` and adds nothing (FR-007)
+- [X] T023 [US2] Run `just test` (`Justfile`) and see T017–T021 fail because the option and the variable do not exist; run the integration test of T022 through `just full-test` and see it pass already (it tests T007's code against the real Spack)
 
 ### Implementation for User Story 2
 
-- [ ] T024 [P] [US2] In `plugins/modules/spack_command.py`: option `yes_to_all` (`dict(type="bool", default=False)`), documented as contracts/interface.md gives it, including the note on the leading words; `Spack(module, params["spack"], yes_to_all=params["yes_to_all"])`; the site's `args` run through `spack.answered(params["args"])` (words walked)
-- [ ] T025 [P] [US2] In `plugins/modules/spack_env.py`: option and documentation as in T024; `concretize` (words 1), `install` (words 1) and `module <system> refresh` (words 3) through `answered()`
-- [ ] T026 [P] [US2] In `plugins/modules/spack_buildcache_push.py`, `plugins/modules/spack_mirror.py` and `plugins/modules/spack_detect.py`: option and documentation as in T024; `buildcache push` (words 2), `mirror add` and `mirror remove` (words 2), `compiler find` and `external find` (words 2) through `answered()`
-- [ ] T027 [US2] In `plugins/modules/spack_config.py` and the `Configuration` class of `plugins/module_utils/spack.py`: option and documentation as in T024; `Configuration.add` and `Configuration.remove` through `answered(..., words=1)`, since `config` takes `--scope` before its subcommand and `config`'s help decides (research.md R5); a comment says so
+- [X] T024 [P] [US2] In `plugins/modules/spack_command.py`: option `yes_to_all` (`dict(type="bool", default=False)`), documented as contracts/interface.md gives it, including the note on the leading words; `Spack(module, params["spack"], yes_to_all=params["yes_to_all"])`; the site's `args` run through `spack.answered(params["args"])` (words walked)
+- [X] T025 [P] [US2] In `plugins/modules/spack_env.py`: option and documentation as in T024; `concretize` (words 1), `install` (words 1) and `module <system> refresh` (words 3) through `answered()`
+- [X] T026 [P] [US2] In `plugins/modules/spack_buildcache_push.py`, `plugins/modules/spack_mirror.py` and `plugins/modules/spack_detect.py`: option and documentation as in T024; `buildcache push` (words 2), `mirror add` and `mirror remove` (words 2), `compiler find` and `external find` (words 2) through `answered()`
+- [X] T027 [US2] In `plugins/modules/spack_config.py` and the `Configuration` class of `plugins/module_utils/spack.py`: option and documentation as in T024; `Configuration.add` and `Configuration.remove` through `answered(..., words=1)`, since `config` takes `--scope` before its subcommand and `config`'s help decides (research.md R5); a comment says so
 - [X] T028 [US2] In `plugins/modules/spack_gpg_key.py`: option `yes_to_all`, documented with the contract's note that it changes nothing in this module, and passed to `Spack(...)`
-- [ ] T029 [US2] In the role: `spack_setup_yes_to_all: false` in `roles/setup/defaults/main.yml`, with a comment; `yes_to_all: "{{ spack_setup_step.yes_to_all | default(spack_setup_yes_to_all) }}"` in `roles/setup/tasks/kinds/command.yml`, `config.yml`, `detect.yml`, `gpg_key.yml` and `mirror.yml`; `yes_to_all` added to the `optional` list of those five kinds in `plugins/filter/setup_problems.py`
-- [ ] T030 [US2] In `roles/setup/README.md`: the variable in the Variables table, `yes_to_all` in the list of what any Spack step may have, and the warning of FR-007 (it answers "yes" to every confirmation of a command that takes it, including ones that remove or overwrite; without it such a prompt fails the task, as Ansible gives Spack no terminal); say that `gpg_key` steps answer the trust prompt in any case
-- [ ] T031 [US2] Run `just test`, then `just full-test` (`Justfile`): T017–T022 pass. Commit
+- [X] T029 [US2] In the role: `spack_setup_yes_to_all: false` in `roles/setup/defaults/main.yml`, with a comment; `yes_to_all: "{{ spack_setup_step.yes_to_all | default(spack_setup_yes_to_all) }}"` in `roles/setup/tasks/kinds/command.yml`, `config.yml`, `detect.yml`, `gpg_key.yml` and `mirror.yml`; `yes_to_all` added to the `optional` list of those five kinds in `plugins/filter/setup_problems.py`
+- [X] T030 [US2] In `roles/setup/README.md`: the variable in the Variables table, `yes_to_all` in the list of what any Spack step may have, and the warning of FR-007 (it answers "yes" to every confirmation of a command that takes it, including ones that remove or overwrite; without it such a prompt fails the task, as Ansible gives Spack no terminal); say that `gpg_key` steps answer the trust prompt in any case
+- [X] T031 [US2] Run `just test`, then `just full-test` (`Justfile`): T017–T022 pass. Commit
 
 **Checkpoint**: both stories work; with `yes_to_all` off, every module runs
 what 0.0.2 ran, apart from `spack_gpg_key`'s two trusts.
@@ -135,12 +135,12 @@ what 0.0.2 ran, apart from `spack_gpg_key`'s two trusts.
 
 ## Phase 5: Polish, documentation and acceptance
 
-- [ ] T032 [P] In `CHANGELOG.md`, under a new `## Unreleased` heading (to become 0.0.3, FR-006): the fix of `from_mirrors` on Spack 1.2 (the head node's `Trust key … EOF` failure, quoted); the fix of `key` on Spack 1.0 and 1.1 (`unrecognized arguments: -y`, a defect of 0.0.1 and 0.0.2); the new `yes_to_all` option of the seven modules and `spack_setup_yes_to_all`, off by default, with its warning; a playbook written for 0.0.2 runs unchanged
-- [ ] T033 [P] In `README.md`, where it describes the modules (the table at line 63 and any list of common options), mention `yes_to_all` and point to the role README; leave `docs/examples/` as they are (`cloud-sandbox.yml`'s `from_mirrors` steps now work as written) unless `tests/unit/test_examples.py` asks otherwise
-- [ ] T034 Run `/speckit-analyze` for spec 003 and settle anything it finds between `spec.md`, `plan.md` and this file
-- [ ] T035 Run `just test` (`Justfile`)
-- [ ] T036 Run `just full-test` (`Justfile`)
-- [ ] T037 Tick this file's tasks, and set the Status line of `specs/003-mirror-keys-yes-to-all/spec.md` to done, with the date. Commit
+- [X] T032 [P] In `CHANGELOG.md`, under a new `## Unreleased` heading (to become 0.0.3, FR-006): the fix of `from_mirrors` on Spack 1.2 (the head node's `Trust key … EOF` failure, quoted); the fix of `key` on Spack 1.0 and 1.1 (`unrecognized arguments: -y`, a defect of 0.0.1 and 0.0.2); the new `yes_to_all` option of the seven modules and `spack_setup_yes_to_all`, off by default, with its warning; a playbook written for 0.0.2 runs unchanged
+- [X] T033 [P] In `README.md`, where it describes the modules (the table at line 63 and any list of common options), mention `yes_to_all` and point to the role README; leave `docs/examples/` as they are (`cloud-sandbox.yml`'s `from_mirrors` steps now work as written) unless `tests/unit/test_examples.py` asks otherwise
+- [X] T034 Run `/speckit-analyze` for spec 003 and settle anything it finds between `spec.md`, `plan.md` and this file
+- [X] T035 Run `just test` (`Justfile`)
+- [X] T036 Run `just full-test` (`Justfile`)
+- [X] T037 Tick this file's tasks, and set the Status line of `specs/003-mirror-keys-yes-to-all/spec.md` to done, with the date. Commit
 - [ ] T038 **Only on the operator's word, asked first:** finish the feature with `git flow feature finish mirror-keys-yes-to-all --squash --keep` (push only when told), check `git diff develop feature/mirror-keys-yes-to-all` is empty; then, on a separate word, release 0.0.3 as the collection's release procedure says. Say before any tag is pushed that pushing it publishes to Ansible Galaxy (Principle V)
 
 ---
@@ -152,6 +152,9 @@ what 0.0.2 ran, apart from `spack_gpg_key`'s two trusts.
   and T004; then T006, T007, T008 in order. Blocks Phases 3 and 4.
 - **Phase 3 (US1)**: T009, T010, T011 in parallel; T012 after all three;
   T013 after T012; T014 after T013; T015; T016 after T015.
+- **Phase 3b (US3)**: after Phase 3 and before Phase 4, on the operator's
+  word; T039 and T040 before T041 and T042; T043 repeats until the tests
+  pass on every version; T044 last.
 - **Phase 4 (US2)**: can start after Phase 2, alongside Phase 3, except that
   T028 and T013 both change `plugins/modules/spack_gpg_key.py` (do T013
   first), and T022 and T010 both change `tests/integration/test_real_spack.py`
@@ -216,4 +219,11 @@ T024 spack_command.py   T025 spack_env.py   T026 push, mirror, detect
   1.1.0.
 - **Phase 3b** replaced the help check for `spack_gpg_key`'s two trusts with
   the version table (operator, 2026-11-25): `answered()` lost its `consent`,
-  the trusts read no help, and the stand-in's 1.1 help texts went.
+  the trusts read no help, and the stand-in's 1.1 help texts went. So T003's
+  and T004's `spack_like` became the stand-in's `version`, and T009's and
+  T013's `answered(..., consent=True)` became `trusting()`; the tasks are left
+  as they were done.
+- **T022**'s test reads `install` (has the option), `mirror add` (has not),
+  `module tcl refresh` (walked to) and `config --scope user add` (only
+  `config` read), rather than `gpg trust`: it runs on 1.0 and 1.1 too, whose
+  `gpg trust` has no option, and the trusts no longer use the help check.

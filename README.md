@@ -65,6 +65,13 @@ can also be used alone:
 | `spack_command` | Runs any Spack command, for what the others do not cover, with a stated way to tell whether it changed something |
 | `shell_environment` | Captures the environment some shell lines produce (loading environment modules, say), to give to the tasks that need it |
 
+Every module that runs Spack, and every step of the role but `environment`,
+takes `yes_to_all` (off unless asked for): Spack's confirmations, which
+would fail under Ansible, are then answered "yes" for each command that
+offers `--yes-to-all`, removals and overwrites included.
+[The role's README](roles/setup/README.md#answering-spacks-confirmations-yes_to_all)
+says how, and when not to.
+
 Declaring and discovering are kept apart on purpose. A setting, a mirror
 or a key is a state that can be compared and previewed. Detection depends
 on the machine and on the environment it runs in, cannot be previewed, and
@@ -155,9 +162,14 @@ option.
 
 - ansible-core 2.16 or later; it is tested with the 2.16 series, which
   RHEL 10 ships.
-- Spack on the managed node. The collection is tested against the Spack
-  version the Cloud Sandbox pins (v1.2.0); Spack's command line changes
-  between major versions, so pin yours too.
+- Spack 1.0 or later on the managed node. The collection is tested against
+  the real Spack 1.0.0, 1.1.0 and 1.2.0 (the version the Cloud Sandbox pins,
+  which the tests are written to). Where they differ in the commands the
+  collection runs, the collection follows the version it finds; the
+  differences are listed in `plugins/module_utils/spack.py` (`BEHAVIOUR`).
+  On Spack 1.1, a configuration scope whose directory does not exist yet
+  (`~/.spack`, `/etc/spack`) cannot be written to until it is made. A Spack
+  newer than 1.2 is taken to behave as 1.2; pin yours.
 
 ## Working on it
 
@@ -167,7 +179,9 @@ You need `just` and `uv`.
 just init        # the tool environment: ansible-core 2.16, ruff, pyright, pytest
 just build       # dist/infrastructurebuilder-csis_spack-<version>.tar.gz
 just test        # ruff, pyright, the unit tests against a stand-in spack (a few minutes), and a build that installs
-just full-test   # the same, then the modules and the role against the real Spack v1.2.0, then ansible-test sanity
+just full-test   # the same, then the modules and the role against the real Spack 1.0.0, 1.1.0 and 1.2.0, then ansible-test sanity
+just integration # only the modules and the role against the real Spacks: for seeing a new integration test fail first
+just format      # rewrite the code in ruff's format, which lint checks
 just import-check  # the tarball through galaxy-importer, the checks Galaxy runs on an upload
 just release     # full-test and the tarball; then tag it with the bare version, as 0.0.1
 just publish     # from the tag: upload to Galaxy (needs GALAXY_API_KEY)

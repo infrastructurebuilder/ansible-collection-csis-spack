@@ -48,14 +48,19 @@ spack_setup_yes_to_all: false
 
 ## What `spack_gpg_key` runs
 
-| Input | Spack whose help lists `--yes-to-all` (1.2) | Spack whose help does not (1.0, 1.1) |
+| Input | Spack 1.2 and later | Spack 1.0 and 1.1 |
 | --- | --- | --- |
 | `key: <file or URL>` | `spack gpg trust --yes-to-all <file>` | `spack gpg trust <file>` |
 | `from_mirrors: true` | `spack buildcache keys --yes-to-all --install --trust` | `spack buildcache keys --install --trust` |
 
-whatever `yes_to_all` says. The option goes straight after the command's words; Spack takes its options in any order. Before each, `spack gpg trust --help` or
-`spack buildcache keys --help` is run once. In check mode neither trust runs,
-and no help is read for them.
+whatever `yes_to_all` says. Which column applies is told by the version
+`spack --version` gives, from the table `BEHAVIOUR` in
+`plugins/module_utils/spack.py` (a Spack newer than 1.2 is read as 1.2); no
+help is read for these. The option goes straight after the command's words;
+Spack takes its options in any order. In check mode neither trust runs.
+
+The trusted keys are read from `spack gpg list --trusted --fmt colons` on 1.2,
+and from `spack gpg list --trusted`'s own listing on 1.0 and 1.1.
 
 Reported, unchanged: `changed` is true when a key is in
 `spack gpg list --trusted` afterwards and was not before; `trusted` lists

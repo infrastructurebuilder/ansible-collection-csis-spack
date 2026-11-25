@@ -8,10 +8,13 @@ first concretization bootstraps Spack's solver and takes a few minutes.
 
 from __future__ import annotations
 
+import os
+import subprocess
 from pathlib import Path
 
 import pytest
-from real_spack import keyring, local_scopes, publish_keys, signing_key, spack_env, spack_version
+from ansible_collections.infrastructurebuilder.csis_spack.plugins.module_utils.spack import Spack
+from real_spack import keyring, local_scopes, on_path, publish_keys, signing_key, spack_env, spack_version
 from runner import run_module
 
 pytestmark = pytest.mark.integration
@@ -184,3 +187,37 @@ def test_the_keys_a_mirror_publishes_are_trusted_with_no_prompt(
         both = run("spack_gpg_key", {"from_mirrors": True}, truster)
         assert (both["changed"], both["trusted"]) == (True, [second_key])
         assert run("spack_gpg_key", {"from_mirrors": True}, truster)["changed"] is False
+
+
+class RealModule:
+    """What Spack needs of an AnsibleModule, running the real spack of an environment."""
+
+    def __init__(self, env: dict[str, str]) -> None:
+        self.env = env
+
+    def run_command(self, command: list[str]) -> tuple[int, str, str]:
+        done = subprocess.run(command, env=os.environ | self.env, capture_output=True, text=True, check=False)
+        return done.returncode, done.stdout, done.stderr
+
+
+def test_the_yes_to_all_help_check_reads_the_real_spacks_help(spack_env: dict[str, str]) -> None:
+    """yes_to_all's help check against the real Spack (spec 003, FR-007): the same on 1.0, 1.1 and 1.2."""
+    spack = Spack(RealModule(spack_env), on_path(spack_env), yes_to_all=True)
+    assert spack.answered(["install", "--fake"], words=1) == ["install", "--yes-to-all", "--fake"]
+    assert spack.answered(["mirror", "add", "n", "file:///nowhere"], words=2) == [
+        "mirror",
+        "add",
+        "n",
+        "file:///nowhere",
+    ]
+    # Walked to: module, then tcl, then refresh, whose help lists it.
+    assert spack.answered(["module", "tcl", "refresh", "--delete-tree"]) == [
+        "module",
+        "tcl",
+        "refresh",
+        "--yes-to-all",
+        "--delete-tree",
+    ]
+    # --scope before the subcommand: only config's own help is read, which does not list it.
+    command = ["config", "--scope", "user", "add", "config:build_jobs:2"]
+    assert spack.answered(command) == command

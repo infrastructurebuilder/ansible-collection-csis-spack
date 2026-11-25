@@ -135,3 +135,19 @@ def test_something_must_be_looked_for(spack: Spack) -> None:
 
 def test_externals_takes_true_false_or_names(spack: Spack) -> None:
     assert "externals must be true, false or a list" in detect(spack, externals="some")["msg"]
+
+
+def helps(spack: Spack) -> list[list[str]]:
+    """The help calls the stand-in saw, as the command words each was for."""
+    return [call[:-1] for call in spack.calls() if call[-1:] == ["--help"]]
+
+
+def test_yes_to_all_reads_the_detection_help_and_adds_nothing_it_does_not_list(spack: Spack) -> None:
+    result = detect(spack, compilers=True, externals=["cmake"], yes_to_all=True)
+    assert result["failed"] is False, result.get("msg")
+    assert helps(spack) == [["compiler", "find"], ["external", "find"]]
+
+
+def test_without_yes_to_all_detection_reads_no_help(spack: Spack) -> None:
+    detect(spack, compilers=True, externals=["cmake"])
+    assert helps(spack) == []

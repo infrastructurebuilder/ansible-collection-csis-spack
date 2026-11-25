@@ -49,12 +49,12 @@ KINDS = {
     "config": {
         "module": "spack_config",
         "required": ["settings"],
-        "optional": ["scope", "state", "mode"],
+        "optional": ["scope", "state", "mode", "yes_to_all"],
     },
     "mirror": {
         "module": "spack_mirror",
         "required": ["name"],
-        "optional": ["url", "type", "signed", "scope", "state"],
+        "optional": ["url", "type", "signed", "scope", "state", "yes_to_all"],
     },
     "gpg_key": {
         "module": "spack_gpg_key",
@@ -64,12 +64,21 @@ KINDS = {
     "detect": {
         "module": "spack_detect",
         "required": [],
-        "optional": ["compilers", "externals", "not_buildable", "exclude", "paths", "require", "scope"],
+        "optional": [
+            "compilers",
+            "externals",
+            "not_buildable",
+            "exclude",
+            "paths",
+            "require",
+            "scope",
+            "yes_to_all",
+        ],
     },
     "command": {
         "module": "spack_command",
         "required": ["args", "changes"],
-        "optional": ["creates", "sections", "scope", "env"],
+        "optional": ["creates", "sections", "scope", "env", "yes_to_all"],
     },
     # "name" here is the name later steps refer to the environment by.
     "environment": {

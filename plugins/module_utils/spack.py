@@ -634,7 +634,10 @@ class Configuration:
             raise
 
     def remove(self, path):
-        self.spack.run(["config", *scope_args(self.scope), "remove", path_text(path)])
+        # "config" takes --scope before its subcommand, so its own help decides (words=1).
+        self.spack.run(
+            self.spack.answered(["config", *scope_args(self.scope), "remove", path_text(path)], words=1)
+        )
 
     def add(self, section, data):
         """Add ``data`` to a section, through a file: one section per file is what Spack takes."""
@@ -644,6 +647,8 @@ class Configuration:
         try:
             with os.fdopen(handle, "w") as stream:
                 json.dump({section: data}, stream)
-            self.spack.run(["config", *scope_args(self.scope), "add", "-f", name])
+            self.spack.run(
+                self.spack.answered(["config", *scope_args(self.scope), "add", "-f", name], words=1)
+            )
         finally:
             os.unlink(name)

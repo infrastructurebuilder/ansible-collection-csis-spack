@@ -301,3 +301,30 @@ def test_an_unknown_option_is_refused(spack: Spack) -> None:
     result = spack.module("spack_env", path=str(spack.env), modules=["dotkit"])
     assert result["failed"] is True
     assert "dotkit" in result["msg"]
+
+
+def helps(spack: Spack) -> list[list[str]]:
+    """The help calls the stand-in saw, as the command words each was for."""
+    return [call[:-1] for call in spack.calls() if call[-1:] == ["--help"]]
+
+
+def test_yes_to_all_answers_install_and_leaves_the_rest_as_they_are(spack: Spack) -> None:
+    spack.update(module_roots={"tcl": str(spack.root / "modules")})
+    result = spack.module(
+        "spack_env", path=str(spack.env), install_args=["--fake"], modules=["tcl"], yes_to_all=True
+    )
+    assert result["failed"] is False, result.get("msg")
+    assert spack.calls("install") == [["install", "--help"], ["install", "--yes-to-all", "--fake"]]
+    assert [call for call in spack.calls("concretize") if call[-1] != "--help"] == [
+        ["concretize", "--force", "-q", "--fresh"]
+    ]
+    # It answers with its own -y already, and is run as before.
+    (refresh,) = spack.calls("module", "tcl", "refresh")
+    assert refresh[:4] == ["module", "tcl", "refresh", "-y"]
+    assert "--yes-to-all" not in refresh
+
+
+def test_without_yes_to_all_spack_env_runs_what_it_did_and_reads_no_help(spack: Spack) -> None:
+    spack.module("spack_env", path=str(spack.env), install_args=["--fake"])
+    assert spack.calls("install") == [["install", "--fake"]]
+    assert helps(spack) == []

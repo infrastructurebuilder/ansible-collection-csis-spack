@@ -13,5 +13,6 @@
     exclude: "{{ spack_setup_step.exclude | default(omit) }}"
     paths: "{{ spack_setup_step.paths | default(omit) }}"
     require: "{{ spack_setup_step.require | default(omit) }}"
+    yes_to_all: "{{ spack_setup_step.yes_to_all | default(spack_setup_yes_to_all) }}"
   environment: "{{ spack_setup_step_environment }}"
   register: spack_setup_done

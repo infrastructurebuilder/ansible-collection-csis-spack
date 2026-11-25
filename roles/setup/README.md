@@ -17,6 +17,7 @@ collection's modules, so each can tell whether it changed anything.
 | `spack_setup` | `[]` | The steps |
 | `spack_setup_executable` | `spack` | The Spack executable, as a path or a name looked up on `PATH` |
 | `spack_setup_scope` | `site` | The configuration scope of a step that does not name one |
+| `spack_setup_yes_to_all` | `false` | Whether every step answers Spack's confirmations; see below |
 
 Before 0.0.1, in the development versions this repository tagged and later
 withdrew, `spack_setup_executable` was named `spack_setup_spack`. The old
@@ -34,15 +35,45 @@ A mapping with a `kind`, that kind's options, and optionally:
 - `environment`: what the step's Spack command runs in. Either the name of
   an environment that an earlier `environment` step captured, or a mapping
   of variables.
+- `yes_to_all` (every kind but `environment`): whether this step answers
+  Spack's confirmations; it overrides `spack_setup_yes_to_all`.
+
+### Answering Spack's confirmations: `yes_to_all`
+
+Some Spack commands ask before they act, `[y/N]`: `spack gc` and
+`spack uninstall` before removing anything, `spack install` before
+reinstalling what is installed already. Ansible gives Spack no terminal to
+answer from, so such a question fails the step.
+
+With `yes_to_all` true, for the whole role (`spack_setup_yes_to_all`) or for
+one step, each Spack command a step runs to change something is given
+`--yes-to-all` where the help of the Spack on the node lists that option
+for it, which answers **"yes" to every confirmation** that command asks,
+including the ones before removing or overwriting something. Turn it on
+for the steps that need it, not out of habit. The help is read only when
+it is on, once for each command. A command that already has `-y` or
+`--yes-to-all` is run as written.
+
+A `command` step's command is read from the leading words of `args`, up to
+the first option: a subcommand written after an option of its parent, as
+in `config --scope user add`, is not seen, and the parent's help decides.
+
+`gpg_key` steps answer Spack's question before trusting a key in any case:
+asking for the key, or for the keys the mirrors publish, is the consent.
 
 | `kind` | Module | What it does | Options |
 | --- | --- | --- | --- |
-| `config` | `spack_config` | Declares settings in a configuration scope. Compared with what is there; a list is set exactly | `settings` (required), `state`, `mode`, `scope` |
-| `mirror` | `spack_mirror` | Declares one mirror. A different one of the same name is replaced | `name` (required), `url`, `type`, `signed`, `state`, `scope` |
-| `gpg_key` | `spack_gpg_key` | Trusts a public key from a file or URL, or the keys the mirrors publish | `key`, `fingerprint`, `from_mirrors` |
-| `detect` | `spack_detect` | Has Spack look for compilers and installed packages. Discovery: it depends on the machine and on the step's environment | `compilers`, `externals`, `not_buildable`, `exclude`, `paths`, `require`, `scope` |
-| `command` | `spack_command` | Runs any Spack command, for what the kinds above do not cover, with a stated way to tell a change | `args` and `changes` (required), `creates`, `sections`, `scope`, `env` |
+| `config` | `spack_config` | Declares settings in a configuration scope. Compared with what is there; a list is set exactly | `settings` (required), `state`, `mode`, `scope`, `yes_to_all` |
+| `mirror` | `spack_mirror` | Declares one mirror. A different one of the same name is replaced | `name` (required), `url`, `type`, `signed`, `state`, `scope`, `yes_to_all` |
+| `gpg_key` | `spack_gpg_key` | Trusts a public key from a file or URL, or the keys the mirrors publish | `key`, `fingerprint`, `from_mirrors`, `yes_to_all` |
+| `detect` | `spack_detect` | Has Spack look for compilers and installed packages. Discovery: it depends on the machine and on the step's environment | `compilers`, `externals`, `not_buildable`, `exclude`, `paths`, `require`, `scope`, `yes_to_all` |
+| `command` | `spack_command` | Runs any Spack command, for what the kinds above do not cover, with a stated way to tell a change | `args` and `changes` (required), `creates`, `sections`, `scope`, `env`, `yes_to_all` |
 | `environment` | `shell_environment` | Runs shell lines of yours and keeps the environment they produce under a name, for later steps. The only shell the role runs | `name` and `shell` (required), `executable` |
+
+On Spack 1.1, a step cannot write to a configuration scope whose directory
+does not exist yet: the user scope (`~/.spack`) or the system scope
+(`/etc/spack`). Spack 1.1 leaves such a scope out; the step fails and says
+which directory to make. Spack 1.0 and 1.2 make it on the first write.
 
 `ansible-doc infrastructurebuilder.csis_spack.<module>` describes each
 option. The role passes a step's options to the module as they are, and

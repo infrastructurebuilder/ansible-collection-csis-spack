@@ -243,3 +243,24 @@ def test_force_takes_true_false_or_once(spack: Spack) -> None:
     assert result["failed"] is True
     assert "force must be true, false or once" in result["msg"]
     assert spack.calls("buildcache") == []
+
+
+def helps(spack: Spack) -> list[list[str]]:
+    """The help calls the stand-in saw, as the command words each was for."""
+    return [call[:-1] for call in spack.calls() if call[-1:] == ["--help"]]
+
+
+def test_yes_to_all_reads_the_push_help_and_adds_nothing_it_does_not_list(spack: Spack) -> None:
+    installed(spack)
+    result = spack.module(
+        "spack_buildcache_push", env=str(spack.env), mirror="/srv/mirror", unsigned=True, yes_to_all=True
+    )
+    assert result["failed"] is False, result.get("msg")
+    assert ["buildcache", "push"] in helps(spack)
+    assert all("--yes-to-all" not in call for call in spack.calls("buildcache", "push"))
+
+
+def test_without_yes_to_all_a_push_reads_no_help(spack: Spack) -> None:
+    installed(spack)
+    spack.module("spack_buildcache_push", env=str(spack.env), mirror="/srv/mirror", unsigned=True)
+    assert helps(spack) == []
