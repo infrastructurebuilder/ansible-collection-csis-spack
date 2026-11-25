@@ -189,6 +189,8 @@ SANDBOX_MACHINE = {
 # L102-L111, then the three Spack tasks of roles/intel_oneapi. The heredoc
 # that appends the two externals to site/packages.yaml is written as the
 # "config add -f" that has the same effect.
+# "buildcache keys" has --yes-to-all, as the sandbox now runs it: Spack 1.2
+# asks before trusting each key, and the stand-in follows it (spec 003).
 SCRIPT_BASE = [
     ["config", "add", "config:install_tree:padded_length:73"],
     ["config", "add", "modules:default:enable:[tcl]"],
@@ -196,7 +198,7 @@ SCRIPT_BASE = [
     ["external", "find", "--scope", "site"],
     ["external", "find", "--not-buildable", "--scope", "site", "cmake"],
     ["mirror", "add", "--scope", "site", "spack-public", "https://cache.spack.io"],
-    ["buildcache", "keys", "--install", "--trust"],
+    ["buildcache", "keys", "--install", "--trust", "--yes-to-all"],
 ]
 SCRIPT_INTEL = [
     ["compiler", "find", "--scope", "site"],
@@ -211,7 +213,7 @@ SCRIPT_INTEL = [
             ("mpi", "intel-oneapi-mpi"),
         ]
     ],
-    ["buildcache", "keys", "--install", "--trust"],
+    ["buildcache", "keys", "--install", "--trust", "--yes-to-all"],
 ]
 SCRIPT_EXTERNALS = {
     "packages": {

@@ -151,7 +151,7 @@ and pass with the fix.
 ### Functional Requirements
 
 - **FR-001**: With `from_mirrors: true`, `spack_gpg_key` MUST run
-  `spack buildcache keys --install --trust --yes-to-all` where that command's
+  `spack buildcache keys --yes-to-all --install --trust` where that command's
   help lists `--yes-to-all` (Spack 1.2 and later), so that Spack's
   confirmation is answered, and `spack buildcache keys --install --trust`
   where it does not (Spack 1.0 and 1.1, which do not ask). The help check is

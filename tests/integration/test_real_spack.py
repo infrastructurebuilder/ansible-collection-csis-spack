@@ -1,4 +1,4 @@
-"""Both modules against the real Spack v1.2.0, on the local machine (just full-test).
+"""The modules against the real Spack v1.2.0, on the local machine (just full-test).
 
 Spack is cloned once into .tmp/spack, and keeps its user configuration and
 caches in .tmp/ too, so nothing of the local machine's own Spack is read or
@@ -11,7 +11,7 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
-from real_spack import real_spack_env
+from real_spack import keyring, publish_keys, real_spack_env, signing_key
 from runner import run_module
 
 pytestmark = pytest.mark.integration
@@ -131,3 +131,59 @@ def test_both_modules_against_the_real_spack(tmp_path: Path, spack_env: dict[str
     forced = run("spack_buildcache_push", push | {"force": True})
     assert {item["hash"] for item in forced["pushed"]} == {item["hash"] for item in pushed["pushed"]}
     assert "force=true overwrites every package" in forced["_stderr"]
+
+
+def test_the_keys_a_mirror_publishes_are_trusted_with_no_prompt(
+    tmp_path: Path, spack_env: dict[str, str]
+) -> None:
+    """spack_gpg_key from_mirrors against a mirror that publishes keys (spec 003, FR-003).
+
+    Spack 1.2 asks "Trust key: <fingerprint> [y/N]" for every key a mirror
+    publishes, trusted already or not; under Ansible the question reads end of
+    file, and 0.0.2's module failed here with exit 3.
+    """
+    env = tmp_path / "env"
+    env.mkdir()
+    (env / "spack.yaml").write_text(
+        "spack:\n  specs: [zlib]\n  view: false\n  config:\n"
+        f"    install_tree:\n      root: {tmp_path / 'store'}\n"
+    )
+    mirror = tmp_path / "mirror"
+
+    def run(name: str, args: dict, env: dict[str, str]) -> dict:
+        result = run_module(name, args, env=env)
+        assert result["failed"] is False, result.get("msg")
+        return result
+
+    run("spack_env", {"path": str(env), "install_args": ["--fake"]}, spack_env)
+    with keyring() as signing, keyring() as trusting:
+        signer = spack_env | {"SPACK_GNUPGHOME": signing}
+        # The mirror is read from a user scope of the test's own: with
+        # SPACK_DISABLE_LOCAL_CONFIG, "mirror add" would write to Spack's own
+        # site scope in .tmp/spack (research.md, R4).
+        local = {name: value for name, value in spack_env.items() if name != "SPACK_DISABLE_LOCAL_CONFIG"}
+        truster = local | {
+            "SPACK_USER_CONFIG_PATH": str(tmp_path / "user"),
+            "SPACK_SYSTEM_CONFIG_PATH": str(tmp_path / "system"),
+            "SPACK_GNUPGHOME": trusting,
+        }
+        first_key = signing_key(spack_env, signing, "Key A")
+        run("spack_buildcache_push", {"env": str(env), "mirror": str(mirror), "key": first_key}, signer)
+        publish_keys(spack_env, signing, mirror)
+        added = {"name": "signed", "url": f"file://{mirror}", "type": ["binary"], "scope": "user"}
+        run("spack_mirror", added, truster)
+
+        first = run("spack_gpg_key", {"from_mirrors": True}, truster)
+        assert (first["changed"], first["trusted"]) == (True, [first_key])
+        # Spack asks again for a key it trusts; answered, nothing changes.
+        again = run("spack_gpg_key", {"from_mirrors": True}, truster)
+        assert (again["changed"], again["trusted"]) == (False, [])
+
+        # A mirror that publishes two keys: the one not yet trusted is the change.
+        second_key = signing_key(spack_env, signing, "Key B")
+        push = {"env": str(env), "mirror": str(mirror), "key": second_key, "force": True}
+        run("spack_buildcache_push", push, signer)
+        publish_keys(spack_env, signing, mirror)
+        both = run("spack_gpg_key", {"from_mirrors": True}, truster)
+        assert (both["changed"], both["trusted"]) == (True, [second_key])
+        assert run("spack_gpg_key", {"from_mirrors": True}, truster)["changed"] is False

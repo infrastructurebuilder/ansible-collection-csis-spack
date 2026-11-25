@@ -189,7 +189,7 @@ roles/setup/
 └── README.md
 tests/unit/
 ├── fake_spack.py, fake_spack_setup.py   # --help, the 1.0/1.1 behaviour
-├── fake_spack_help.py                   # new: help texts as Spack 1.2.0 prints them
+├── fake_spack_help.json                 # new: help texts as Spack 1.2.0 and 1.1.0 print them
 ├── test_module_utils.py                 # answered()
 ├── test_spack_gpg_key.py                # new forms (FR-004)
 ├── test_spack_*.py                      # yes_to_all on and off, per module
@@ -199,5 +199,11 @@ CHANGELOG.md                             # Unreleased
 ```
 
 **Structure Decision**: the collection's existing layout. One file is added
-outside `specs/`: `tests/unit/fake_spack_help.py`, the stand-in's help texts,
-kept apart because they are long and copied from the real Spack.
+outside `specs/`: `tests/unit/fake_spack_help.json`, the stand-in's help texts,
+kept apart because they are long and copied from the real Spack (as data, so
+that the help's own long lines are not held to the code's line length).
+Two targets are added to the `Justfile` during implementation:
+`just integration`, the integration tests alone, so that a new one can be
+seen to fail before the change it tests (`full-test` runs `test` first,
+which the fix's unit tests fail), and `just format`, ruff's formatter, which
+`just lint` checks.

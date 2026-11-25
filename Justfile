@@ -31,6 +31,10 @@ lint:
     uv run ruff check plugins tests tools
     uv run ruff format --check plugins tests tools
 
+# Rewrite the plugins, the tests and the release tools in ruff's format, which lint checks.
+format:
+    uv run ruff format plugins tests tools
+
 # Type-check; any error fails.
 typecheck: tree
     uv run pyright
@@ -48,7 +52,7 @@ install-check: build
 
 # Everything in test, then the modules and the setup role against the real Spack v1.2.0 (cloned into .tmp/ once), then ansible-test sanity and Galaxy's own import checks (both need the network the first time).
 full-test: test import-check
-    uv run pytest -q -m integration tests/integration
+    just --justfile {{ justfile() }} integration
     rm -rf .tmp/ansible_collections
     mkdir -p {{ sanity_tree }}
     # Without the planning and agent material, which galaxy.yml keeps out of the tarball too: sanity checks what is shipped, and Spec Kit's own scripts are not ours to hold to shellcheck.
@@ -56,6 +60,10 @@ full-test: test import-check
     # A repository of its own: inside this one, ansible-test would ask this repository's git for its files, and .tmp/ is ignored.
     cd {{ sanity_tree }} && git init -q && git add -A
     cd {{ sanity_tree }} && uv run --project {{ justfile_directory() }} ansible-test sanity --venv --python 3.12
+
+# Only the modules and the setup role against the real Spack v1.2.0 (cloned into .tmp/ once), without the rest of full-test: for seeing a new integration test fail before the change it tests. Not a substitute for test or full-test.
+integration: tree
+    uv run pytest -q -m integration tests/integration
 
 # Build the tarball and run galaxy-importer on it, the checks Galaxy runs when a version is uploaded (ansible-doc and ansible-lint).
 import-check: build

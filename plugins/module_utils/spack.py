@@ -154,16 +154,98 @@ def parse_mirror_list(output):
     return mirrors
 
 
+# Answering Spack's confirmations. Under Ansible, Spack has no terminal: a
+# command that asks "[y/N]" reads end of file and fails. Many of Spack's
+# commands take -y, --yes-to-all to answer for it, but which ones changes
+# between versions (Spack 1.2.0 added it to "gpg trust" and "buildcache keys",
+# together with their question; 1.0 and 1.1 have neither, and refuse the
+# option), so the help of the Spack that is installed is read, and the option
+# given only where it is listed. See specs/003-mirror-keys-yes-to-all.
+YES_TO_ALL = "--yes-to-all"
+YES_OPTION = re.compile(r"^\s+(?:-y, )?--yes-to-all\b", re.MULTILINE)
+# A subcommand in a help: four spaces in, under "positional arguments:",
+# with an alias in brackets ("    push (create)   create a binary ...").
+SUBCOMMAND = re.compile(r"^    ([a-z][\w-]*)(?: \(([a-z][\w-]*)\))?(?:\s|$)")
+
+
+def read_help(text):
+    """Read a help: (whether it lists --yes-to-all, the names of its subcommands)."""
+    subcommands = set()
+    inside = False
+    for line in text.splitlines():
+        if line.startswith("positional arguments:"):
+            inside = True
+        elif line and not line[0].isspace():
+            inside = False
+        elif inside:
+            match = SUBCOMMAND.match(line)
+            if match:
+                subcommands.update(name for name in match.groups() if name)
+    return bool(YES_OPTION.search(text)), subcommands
+
+
 class Spack:
     """One Spack executable, run on behalf of an AnsibleModule."""
 
-    def __init__(self, module, executable):
+    def __init__(self, module, executable, yes_to_all=False):
         self.module = module
         if os.sep in executable:
             self.executable = executable
         else:
             self.executable = module.get_bin_path(executable, required=True)
         self.calls = []
+        self.yes_to_all = yes_to_all
+        self.helps = {}
+
+    def help(self, words):
+        """Read ``spack <words> --help`` once: (takes --yes-to-all, subcommands).
+
+        A help that fails, as for a command Spack does not know, takes nothing.
+        """
+        words = tuple(words)
+        if words not in self.helps:
+            try:
+                text = self.run([*words, "--help"])
+            except SpackError:
+                text = ""
+            self.helps[words] = read_help(text)
+        return self.helps[words]
+
+    def command_words(self, args):
+        """Count the leading arguments that name the command, by walking its help.
+
+        The first argument, then each next one while the help so far lists it
+        as a subcommand. --help is only ever asked for after words known to be
+        commands: after anything else (a spec, a path, a script for
+        "spack python") it could reach that command's own arguments, or run it.
+        The walk stops at the first option, so a subcommand written after an
+        option of its parent ("config --scope user add") is not seen.
+        """
+        if not args or args[0].startswith("-"):
+            return 0
+        count = 1
+        while count < len(args) and args[count] in self.help(args[:count])[1]:
+            count += 1
+        return count
+
+    def answered(self, args, words=None, consent=False):
+        """Give ``args`` with --yes-to-all after the command's words, where it belongs.
+
+        It is added when the module was asked to answer (``yes_to_all``) or
+        answers in any case (``consent``), the arguments do not answer already
+        (-y, --yes-to-all), and the help of the command lists the option.
+        ``words`` is how many of ``args`` name the command; without it, they
+        are found by walking the help (command_words). Nothing is ever written
+        to Spack's input.
+        """
+        args = list(args)
+        if not (consent or self.yes_to_all) or "-y" in args or YES_TO_ALL in args:
+            return args
+        if words is None:
+            words = self.command_words(args)
+        if not words or not self.help(args[:words])[0]:
+            return args
+        return [*args[:words], YES_TO_ALL, *args[words:]]
 
     def run(self, args, env_path=None, log_file=None, ok=(0,)):
         """Run Spack with ``args`` (in the environment ``env_path``); return its output.

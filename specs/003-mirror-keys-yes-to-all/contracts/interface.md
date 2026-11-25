@@ -51,9 +51,9 @@ spack_setup_yes_to_all: false
 | Input | Spack whose help lists `--yes-to-all` (1.2) | Spack whose help does not (1.0, 1.1) |
 | --- | --- | --- |
 | `key: <file or URL>` | `spack gpg trust --yes-to-all <file>` | `spack gpg trust <file>` |
-| `from_mirrors: true` | `spack buildcache keys --install --trust --yes-to-all` | `spack buildcache keys --install --trust` |
+| `from_mirrors: true` | `spack buildcache keys --yes-to-all --install --trust` | `spack buildcache keys --install --trust` |
 
-whatever `yes_to_all` says. Before each, `spack gpg trust --help` or
+whatever `yes_to_all` says. The option goes straight after the command's words; Spack takes its options in any order. Before each, `spack gpg trust --help` or
 `spack buildcache keys --help` is run once. In check mode neither trust runs,
 and no help is read for them.
 

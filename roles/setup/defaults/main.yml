@@ -15,3 +15,11 @@ spack_setup_executable: "{{ spack_setup_spack | default('spack') }}"
 
 # The configuration scope of a step that does not name one.
 spack_setup_scope: site
+
+# Whether a step's Spack commands that change something are given
+# --yes-to-all, where Spack's help for the command lists it, to answer every
+# confirmation Spack would ask: including ones before removing or
+# overwriting something. A step's own yes_to_all overrides it. Without it,
+# such a confirmation fails the step, since Ansible gives Spack no terminal.
+# gpg_key steps answer the trust question in any case.
+spack_setup_yes_to_all: false

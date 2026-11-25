@@ -2,12 +2,15 @@
 
 Everything is written to a user scope and a keyring made for the test, so
 the Spack in .tmp/spack, which the other integration test shares, is left as
-it was. Nothing is built or fetched.
+it was. The first test builds and fetches nothing. The second, of a mirror
+that publishes a key, installs zlib with --fake (nothing is compiled) into a
+store of its own, and pushes it signed to a mirror in a directory of its own.
 """
 
 from __future__ import annotations
 
 import json
+import os
 import platform
 import shutil
 import subprocess
@@ -17,7 +20,8 @@ from pathlib import Path
 from typing import Any
 
 import pytest
-from real_spack import SPACK, real_spack_env
+from real_spack import SPACK, publish_keys, real_spack_env, signing_key
+from real_spack import keyring as signing_keyring
 from runner import ROOT, run_setup
 
 pytestmark = pytest.mark.integration
@@ -167,3 +171,49 @@ def test_the_setup_role_against_the_real_spack(
     )  # fmt: skip
     assert refused.rc != 0
     assert user("packages") == before
+
+
+def test_the_setup_role_trusts_the_keys_a_mirror_publishes(
+    tmp_path: Path,
+    spack_env: dict[str, str],
+    keyring: str,
+) -> None:
+    """A gpg_key step of from_mirrors: true, against a mirror that publishes a key (spec 003, SC-001).
+
+    The mirror is made here: zlib installed with --fake, pushed signed with a
+    key made for the test, and the mirror's key index written.
+    """
+    env = {name: value for name, value in spack_env.items() if name != "SPACK_DISABLE_LOCAL_CONFIG"} | {
+        "SPACK_USER_CONFIG_PATH": str(tmp_path / "user"),
+        "SPACK_SYSTEM_CONFIG_PATH": str(tmp_path / "system"),
+        "SPACK_GNUPGHOME": keyring,
+    }
+    spack = str(SPACK / "bin" / "spack")
+    built = tmp_path / "env"
+    built.mkdir()
+    (built / "spack.yaml").write_text(
+        "spack:\n  specs: [zlib]\n  view: false\n  config:\n"
+        f"    install_tree:\n      root: {tmp_path / 'store'}\n"
+    )
+    mirror = tmp_path / "mirror"
+    with signing_keyring() as signing:
+        key = signing_key(spack_env, signing, "Key A")
+        signer = os.environ | spack_env | {"SPACK_GNUPGHOME": signing}
+        push = ["buildcache", "push", "--key", key, str(mirror)]
+        for args in (["concretize"], ["install", "--fake"], push):
+            subprocess.run([spack, "-e", str(built), *args], env=signer, capture_output=True, check=True)
+        publish_keys(spack_env, signing, mirror)
+
+    steps: list[dict[str, Any]] = [
+        {"kind": "mirror", "name": "signed", "url": f"file://{mirror}", "type": ["binary"]},
+        {"kind": "gpg_key", "from_mirrors": True},
+    ]
+    variables = {"spack_setup_executable": spack, "spack_setup_scope": "user"}
+
+    def apply() -> list[bool]:
+        played = run_setup(steps, tmp_path, env=env, variables=variables)
+        assert played.rc == 0, played.output
+        return played.changed
+
+    assert apply() == [True, True]
+    assert apply() == [False, False]

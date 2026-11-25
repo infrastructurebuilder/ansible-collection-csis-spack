@@ -59,7 +59,7 @@ KINDS = {
     "gpg_key": {
         "module": "spack_gpg_key",
         "required": [],
-        "optional": ["key", "fingerprint", "from_mirrors"],
+        "optional": ["key", "fingerprint", "from_mirrors", "yes_to_all"],
     },
     "detect": {
         "module": "spack_detect",

@@ -10,7 +10,11 @@ ATTIC/COLL-INPROGRESS/COLL-STAGE-2.md):
 - a mirror added with no flags is kept as a bare URL, with flags as a mapping;
 - detection only ever adds, says nothing when it finds nothing, and writes the
   ``packages`` section back in another order each time;
-- ``gpg trust`` of a file that holds no key prints an error and exits 0.
+- ``gpg trust`` of a file that holds no key prints an error and exits 0;
+- ``gpg trust`` and ``buildcache keys --trust`` ask before trusting each key,
+  and fail with nothing to answer from, unless given ``-y``/``--yes-to-all``
+  (Spack v1.2.0); as Spack 1.0 and 1.1 they never ask and refuse the option
+  (specs/003-mirror-keys-yes-to-all/research.md, R2 and R4).
 
 State keys used here:
   scopes       {scope: {section: data}}
@@ -23,6 +27,7 @@ State keys used here:
   trusted      fingerprints Spack trusts
   mirror_keys  {mirror name: [fingerprints it publishes]}
   unmade_scopes  scopes whose directory does not exist until something is written
+  spack_like   "1.0" or "1.1": the key commands behave as in those versions
 """
 
 from __future__ import annotations
@@ -36,6 +41,7 @@ from typing import Any
 SCOPE_ORDER = ["defaults", "system", "site", "user"]
 SECTIONS = {"config", "concretizer", "mirrors", "modules", "packages", "repos"}
 KEY_LINE = "FAKE-PUBLIC-KEY "
+YES = ("-y", "--yes-to-all")
 
 
 def error(message: str, code: int = 1) -> int:
@@ -150,6 +156,29 @@ def record(
 
 def mirror_table(state: dict[str, Any]) -> dict[str, Any]:
     return merged_section(state, "mirrors") | state.get("mirrors", {})
+
+
+def old_spack(state: dict[str, Any]) -> bool:
+    """Say whether the stand-in plays Spack 1.0 or 1.1 (state key ``spack_like``)."""
+    return state.get("spack_like") in ("1.0", "1.1")
+
+
+def trust(state: dict[str, Any], keys: list[str], answered: bool) -> int:
+    """Trust ``keys``, asking first for each as Spack 1.2 does, with nothing to answer from.
+
+    Spack 1.2 asks "Trust key: <fingerprint> [y/N]" for every key, trusted
+    already or not, unless given --yes-to-all; under Ansible the question
+    reads end of file, and the command exits 3 (tried with Spack v1.2.0).
+    Spack 1.0 and 1.1 never ask.
+    """
+    trusted = state.setdefault("trusted", [])
+    for key in keys:
+        if not answered and not old_spack(state):
+            print(f"==> Trust key: {key} [y/N] ==> Error: EOF when reading a line", file=sys.stderr)
+            return 3
+        if key not in trusted:
+            trusted.append(key)
+    return 0
 
 
 def handle(state: dict[str, Any], argv: list[str]) -> int | None:
@@ -267,29 +296,34 @@ def handle(state: dict[str, Any], argv: list[str]) -> int | None:
             print(f"pub:-:2048:1:{fingerprint[-16:]}:1794662619:::-:::cs::::::23::0:")
             print(f"fpr:::::::::{fingerprint}:")
         return 0
-    if args[:3] == ["gpg", "trust", "-y"]:
-        if state.get("fail", {}).get("trust"):
-            return error("trust failed on purpose")
-        text = Path(args[3]).read_text() if Path(args[3]).is_file() else ""
-        keys = [line[len(KEY_LINE) :].strip() for line in text.splitlines() if line.startswith(KEY_LINE)]
-        if not keys:
-            # As Spack v1.2.0: an error is printed, and the exit code is 0.
-            print("gpg: no valid OpenPGP data found.", file=sys.stderr)
-        trusted = state.setdefault("trusted", [])
-        trusted += [key for key in keys if key not in trusted]
-        return 0
-    if args == ["buildcache", "keys", "--install", "--trust"]:
-        binary = [
-            name
-            for name, entry in mirror_table(state).items()
-            if isinstance(entry, str) or entry.get("binary", True)
-        ]
-        if not binary:
-            return error("Please add a spack mirror to allow download of build caches.")
-        trusted = state.setdefault("trusted", [])
-        for name in binary:
-            trusted += [key for key in state.get("mirror_keys", {}).get(name, []) if key not in trusted]
-        return 0
+    if args[:2] in (["gpg", "trust"], ["buildcache", "keys"]):
+        # Spack takes the options in any order, before or after the others.
+        command, rest = args[:2], args[2:]
+        answered = [arg for arg in rest if arg in YES]
+        rest = [arg for arg in rest if arg not in YES]
+        if answered and old_spack(state):
+            # As Spack 1.0 and 1.1, which have neither the option nor the prompt.
+            return error(f"unrecognized arguments: {answered[0]}")
+        if command[0] == "gpg":
+            if state.get("fail", {}).get("trust") or len(rest) != 1:
+                return error("trust failed on purpose" if len(rest) == 1 else f"not understood: {args}")
+            text = Path(rest[0]).read_text() if Path(rest[0]).is_file() else ""
+            keys = [line[len(KEY_LINE) :].strip() for line in text.splitlines() if line.startswith(KEY_LINE)]
+            if not keys:
+                # As Spack v1.2.0: an error is printed, and the exit code is 0.
+                print("gpg: no valid OpenPGP data found.", file=sys.stderr)
+        else:
+            if sorted(rest) != ["--install", "--trust"]:
+                return error(f"not understood: {args}")
+            binary = [
+                name
+                for name, entry in mirror_table(state).items()
+                if isinstance(entry, str) or entry.get("binary", True)
+            ]
+            if not binary:
+                return error("Please add a spack mirror to allow download of build caches.")
+            keys = [key for name in binary for key in state.get("mirror_keys", {}).get(name, [])]
+        return trust(state, keys, answered=bool(answered))
 
     if args in (["gpg", "init"], ["gpg", "list"]) or args[:2] in (
         ["buildcache", "update-index"],

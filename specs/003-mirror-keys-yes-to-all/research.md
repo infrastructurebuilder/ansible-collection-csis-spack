@@ -148,6 +148,37 @@ by item 6; the file had not existed before, and was removed.)
   1.1 (no `--yes-to-all` in the help of `gpg trust` and `buildcache keys`,
   and `unrecognized arguments: -y` when given it).
 
+## R6. The fixed module against the real Spack 1.0.0 and 1.1.0 (T016, SC-004)
+
+Tried 2026-11-24, by hand, with the module as fixed for User Story 1, the
+clones of R2, a user and system scope and a keyring of the check's own, and
+R4's mirror (two published keys, its key index written):
+
+| Step | 1.0.0 | 1.1.0 |
+| --- | --- | --- |
+| `spack_gpg_key` `key:` the throwaway key | fails: `spack gpg list --trusted --fmt colons`: `unrecognized arguments: --fmt colons` | the same |
+| `spack_mirror` in scope `user` | fails: `spack config --scope user get --json mirrors`: `unrecognized arguments: --json` | fails: `argument --scope: invalid choice: 'user'` (the scope's directory does not exist yet, worded otherwise than 1.2's "must refer to an existing scope", which the shared code expects) |
+| `spack_gpg_key` `from_mirrors: true` | fails: `gpg list --fmt colons`, as above | the same |
+
+`spack gpg list --help` in both: `usage: spack gpg list [-h] [--trusted] [--signing]`
+(no `--fmt`); `spack config get --help` in 1.0.0:
+`usage: spack config get [-h] [section]` (no `--json`).
+
+**Findings:**
+
+1. The fix of FR-008 is right, but not enough: before `gpg trust` is reached,
+   `spack_gpg_key` reads the trusted keys with `gpg list --fmt colons`, which
+   neither 1.0 nor 1.1 has. So SC-004 cannot be met by this spec as written.
+2. More broadly, **the collection does not work with Spack 1.0 or 1.1**,
+   which it says it supports (`MINIMUM_VERSION = (1, 0)` in
+   `plugins/module_utils/spack.py`; the constitution's Principle III and
+   Technical Constraints). At least `spack_gpg_key`, `spack_mirror` and,
+   on 1.0, everything that reads configuration with `config get --json`
+   (`spack_config`, `spack_command` with `changes: config`) fail there. Only
+   1.2.0 has ever been tested.
+3. This is for the operator to decide (Principle V); it is outside what
+   this spec was asked to fix.
+
 ## Decisions
 
 - **Answer 1 replaced (operator, 2026-11-24, during planning):**
