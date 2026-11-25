@@ -59,8 +59,18 @@ the same day by running `spack buildcache keys --install --trust
   running without the option), and the floor stays Spack 1.0.
 - Q: Does this spec check only `buildcache keys` for an unanswered
   confirmation prompt, or every Spack command the collection runs? → A: Every
-  command the modules run is checked against the real Spack, and any other
-  unanswered prompt found is fixed in this spec, in the same release (FR-007).
+  module that runs Spack gets a `yes_to_all` flag, set for the whole `setup`
+  role by `spack_setup_yes_to_all` and for one step by its own `yes_to_all`.
+  When the flag is on, a command that takes `--yes-to-all` is given it
+  (FR-007). This replaces an earlier answer, which was to fix in this spec
+  every prompt that checking turned up.
+  - Q: What is the flag's default, and does `from_mirrors` depend on it? →
+    A: Off by default. `from_mirrors: true` passes `--yes-to-all` whatever
+    the flag says (FR-001); the flag governs every other command.
+  - Q: How does a module tell that a command takes `--yes-to-all`? → A: It
+    asks the Spack that is installed: it reads `spack <command> --help` and
+    adds the option only when the help lists it, and adds nothing when the
+    command already has `-y` or `--yes-to-all`.
 - Q: Where does the new real-Spack test of `from_mirrors` run: through the
   module, through the `setup` role, or both? → A: Both. The module test
   (`tests/integration/test_real_spack.py`, signing its zlib push) covers User
@@ -100,8 +110,8 @@ release that adds or changes a confirmation is found by `just full-test`, not
 on a head node.
 
 **Why this priority**: the fake Spack cannot know what the real one asks; the
-same gap could hide the next prompt. So every command the modules run is
-checked for one too (FR-007).
+same gap could hide the next prompt. So a site can have every prompt that
+Spack offers `--yes-to-all` for answered, with one flag (FR-007).
 
 **Independent Test**: the new integration tests, of the module and of the
 role, fail on the module as it is today (it reads end-of-file at the prompt),
@@ -128,9 +138,12 @@ and pass with the fix.
 - **FR-001**: With `from_mirrors: true`, `spack_gpg_key` MUST run
   `spack buildcache keys --install --trust --yes-to-all` (or `-y`), so that
   Spack's confirmation is answered, as it already is for `spack gpg trust -y`.
-  On a Spack that has no such option, it MUST fail before running anything,
-  with a message naming the Spack version (see Edge Cases); this is held by a
-  unit test against the stand-in `spack`.
+  It does so whatever `yes_to_all` says (FR-007): asking for `from_mirrors`
+  is the site's consent to trust what the mirrors publish. Whether the option
+  is there is told by the same help check as FR-007's. On a Spack that has no
+  such option, it MUST fail before running anything, with a message naming
+  the Spack version (see Edge Cases); this is held by a unit test against the
+  stand-in `spack`.
 - **FR-002**: The step's report MUST stay as it is: a change only for keys
   trusted afterwards and not before (from `spack gpg list --trusted`), so a
   second run against the same mirrors reports none (Principle II).
@@ -157,16 +170,30 @@ and pass with the fix.
 - **FR-006**: The fix MUST go out in a release (the next of the 0.0 series, by
   semantic versioning a patch), with a changelog entry naming the failure it
   fixes; releasing is on the operator's word (Principle V).
-- **FR-007**: Every Spack command that any module in `plugins/modules/` runs
-  MUST be checked against the real Spack (the pinned 1.2.0) for a
-  confirmation it can ask, and the result for each command recorded in the
-  spec's research. Every confirmation found that the module does not already
-  answer MUST be fixed in this spec, as FR-001 fixes `buildcache keys`: the
-  module passes Spack's own option for it, and fails with a message naming
-  the Spack version where that option is missing. Each fix MUST come with a
-  unit test that holds the new arguments and, where the prompt can be reached
-  against the real Spack, an integration test; it goes out in the same
-  release and the same changelog entry as FR-006.
+- **FR-007**: Every module in `plugins/modules/` that runs Spack MUST take a
+  `yes_to_all` option (true or false, default false):
+  - When it is true, before the module runs a Spack command it reads that
+    command's help (`spack <command> --help`, which changes nothing and so
+    also runs in check mode) and adds `--yes-to-all` only when the help lists
+    it. Nothing is added when the command already has `-y` or
+    `--yes-to-all`.
+  - When it is false, nothing is added, apart from FR-001's `from_mirrors`.
+  - The `setup` role MUST take `spack_setup_yes_to_all` (default false),
+    which sets `yes_to_all` for every step; a step's own `yes_to_all`
+    overrides it, as a step's `scope` overrides `spack_setup_scope`.
+  - Each module's documentation and the role's README MUST say that the flag
+    answers "yes" to every confirmation Spack asks of a command that takes
+    it, including ones that remove or overwrite something, and that without
+    it such a prompt fails the task, since Ansible gives Spack no terminal.
+  - Which commands the modules run take `--yes-to-all` in the pinned Spack
+    (1.2.0) is recorded in the spec's research.
+  - Unit tests against the stand-in `spack` MUST cover: the flag off; the
+    flag on with a command whose help lists the option and with one whose
+    help does not; a command that already has `-y`; the role's variable and
+    a step's override. An integration test MUST show the help check reading
+    the real Spack's help correctly for a command that has the option and
+    one that does not.
+  - It goes out in the same release and changelog as FR-006.
 
 ## Success Criteria *(mandatory)*
 
