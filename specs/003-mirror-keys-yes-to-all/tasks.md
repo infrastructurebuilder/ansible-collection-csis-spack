@@ -227,3 +227,7 @@ T024 spack_command.py   T025 spack_env.py   T026 push, mirror, detect
   `module tcl refresh` (walked to) and `config --scope user add` (only
   `config` read), rather than `gpg trust`: it runs on 1.0 and 1.1 too, whose
   `gpg trust` has no option, and the trusts no longer use the help check.
+
+## Phase 6: Convergence
+
+- [X] T045 Add a `yes_to_all: true` example to `EXAMPLES` in `plugins/modules/spack_command.py` (for instance `args: [gc]`, `changes: always`), saying it answers every confirmation `gc` asks, and a `yes_to_all` step to the example in `roles/setup/README.md`; no module's `EXAMPLES` and no example in the role's README shows the new option, per Constitution, Technical Constraints ("Documentation is part of a change: each module's `DOCUMENTATION`, `EXAMPLES` and `RETURN`") (partial)

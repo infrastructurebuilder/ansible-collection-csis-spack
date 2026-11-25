@@ -101,6 +101,15 @@ EXAMPLES = r"""
     args: [repo, add, --scope, site, /opt/spack-repos/ours]
     changes: config
     sections: [repos]
+
+# Spack asks before removing anything; under Ansible, with no terminal to
+# answer from, the question would fail the task. yes_to_all answers "yes" to
+# every confirmation gc asks: here, to removing every unused package.
+- name: Remove the packages nothing needs any more
+  infrastructurebuilder.csis_spack.spack_command:
+    args: [gc]
+    changes: always
+    yes_to_all: true
 """
 
 RETURN = r"""

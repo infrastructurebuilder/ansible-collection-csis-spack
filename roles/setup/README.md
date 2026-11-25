@@ -103,6 +103,11 @@ leaves out what the step leaves out.
             type: [binary]
           - kind: gpg_key
             from_mirrors: true
+          # Spack asks before removing anything; this step answers "yes".
+          - kind: command
+            args: [gc]
+            changes: always
+            yes_to_all: true
 ```
 
 ## What it does with the list
