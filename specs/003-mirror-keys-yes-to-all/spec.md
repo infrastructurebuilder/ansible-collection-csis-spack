@@ -1,13 +1,14 @@
 # Feature Specification: `spack_gpg_key` trusts the mirrors' keys without a prompt
 
-**Feature Branch**: none yet
+**Feature Branch**: `feature/mirror-keys-yes-to-all`
 
 **Created**: 2026-11-24
 
 **Status**: Draft. Written in the Cloud-Sandbox workshop's session, on the
 operator's instruction ("write a new spec for the collection project"), and
 committed on `develop`; to be clarified, planned and built in a session of
-this repository's own.
+this repository's own. Clarified on `develop` and planned on its feature
+branch, 2026-11-24.
 
 **Input**: a failure on a real head node, in the Cloud-Sandbox workshop's
 spec 002 (a RHEL 10 build cache), 2026-11-24. A play applying the `setup`
@@ -23,10 +24,18 @@ spack buildcache keys --install --trust failed (exit 3):
 `spack_gpg_key` trusts keys in two ways. For a key file or URL it runs
 `spack gpg trust -y <file>` (`plugins/modules/spack_gpg_key.py`, the `-y`
 answers Spack's confirmation). For `from_mirrors` it runs
-`spack buildcache keys --install --trust` with no `-y`. Spack 1.x asks
-"Trust key: <fingerprint> [y/N]" for each key a mirror publishes, and under
+`spack buildcache keys --install --trust` with no `-y`. Spack 1.2 asks
+`Trust key: <fingerprint> [y/N]` for each key a mirror publishes, and under
 Ansible there is no terminal to answer it, so the command reads end-of-file
 and fails.
+
+Planning found the other side of it ([research.md](research.md), R2). The
+prompt and its option arrived together, in Spack 1.2.0: Spack 1.0 and 1.1
+never ask, and have no `-y` on `gpg trust` or `buildcache keys`. So the
+`gpg trust -y` that a key file gets fails on Spack 1.0 and 1.1
+(`unrecognized arguments: -y`): a defect in the released 0.0.1 and 0.0.2,
+which say they support Spack 1.0 or later, unseen because only 1.2.0 is
+tested. This spec fixes it too (FR-008).
 
 It went unseen because:
 
@@ -53,10 +62,14 @@ the same day by running `spack buildcache keys --install --trust
 
 - Q: If a supported Spack (1.0 or 1.1) has no `--yes-to-all` on
   `spack buildcache keys`, what does `spack_gpg_key` do with
-  `from_mirrors: true`? → A: It fails before running anything, with a message
-  naming the Spack version and saying that `from_mirrors` needs
-  `buildcache keys --yes-to-all`. No fallback (no answering on stdin, no
-  running without the option), and the floor stays Spack 1.0.
+  `from_mirrors: true`? → A: It passes `--yes-to-all` where the command's
+  help lists it, and runs without it where it does not, since planning found
+  that such a Spack never asks; the same holds for `gpg trust` (FR-001,
+  FR-008). The floor stays Spack 1.0. This replaces an earlier answer, to
+  fail where the option is missing, which the operator changed during
+  planning once [research.md](research.md) (R2) showed that Spack 1.0 and 1.1
+  have neither the prompt nor the option, and that `from_mirrors` works on
+  them today.
 - Q: Does this spec check only `buildcache keys` for an unanswered
   confirmation prompt, or every Spack command the collection runs? → A: Every
   module that runs Spack gets a `yes_to_all` flag, set for the whole `setup`
@@ -125,25 +138,21 @@ and pass with the fix.
   spack mirror"), as today.
 - Check mode: nothing is run and nothing trusted, as today; the step says it
   could not preview (`previewed: false`).
-- A Spack of 1.0 or later that has no `--yes-to-all` on `buildcache keys`
-  (if planning finds any): with `from_mirrors: true` the step fails before it
-  runs anything, and its message names the Spack version and says that
-  `from_mirrors` needs `buildcache keys --yes-to-all`. It does not answer the
-  prompt on stdin or run without the option.
+- Spack 1.0 or 1.1, whose `buildcache keys` and `gpg trust` have no
+  `--yes-to-all` and never ask: both run without the option, and trust as
+  they do today. Nothing is answered on stdin.
 
 ## Requirements *(mandatory)*
 
 ### Functional Requirements
 
 - **FR-001**: With `from_mirrors: true`, `spack_gpg_key` MUST run
-  `spack buildcache keys --install --trust --yes-to-all` (or `-y`), so that
-  Spack's confirmation is answered, as it already is for `spack gpg trust -y`.
-  It does so whatever `yes_to_all` says (FR-007): asking for `from_mirrors`
-  is the site's consent to trust what the mirrors publish. Whether the option
-  is there is told by the same help check as FR-007's. On a Spack that has no
-  such option, it MUST fail before running anything, with a message naming
-  the Spack version (see Edge Cases); this is held by a unit test against the
-  stand-in `spack`.
+  `spack buildcache keys --install --trust --yes-to-all` where that command's
+  help lists `--yes-to-all` (Spack 1.2 and later), so that Spack's
+  confirmation is answered, and `spack buildcache keys --install --trust`
+  where it does not (Spack 1.0 and 1.1, which do not ask). The help check is
+  FR-007's. It does so whatever `yes_to_all` says: asking for `from_mirrors`
+  is the site's consent to trust what the mirrors publish.
 - **FR-002**: The step's report MUST stay as it is: a change only for keys
   trusted afterwards and not before (from `spack gpg list --trusted`), so a
   second run against the same mirrors reports none (Principle II).
@@ -160,8 +169,10 @@ and pass with the fix.
     installs and pushes.
 
   Both MUST fail on the module as it is today.
-- **FR-004**: The unit test that holds the command's arguments MUST hold them
-  to the new form.
+- **FR-004**: The unit tests that hold `spack_gpg_key`'s arguments MUST hold
+  them to the new forms, against a stand-in `spack` whose help lists
+  `--yes-to-all` (as 1.2) and one whose help does not and which rejects the
+  option (as 1.0 and 1.1), for both `from_mirrors` and `key`.
 - **FR-005**: The module's documentation MUST say that the keys a mirror
   publishes are trusted without confirmation, which is what `from_mirrors`
   asks for: every key the mirrors publish, with no fingerprint to check them
@@ -194,6 +205,13 @@ and pass with the fix.
     the real Spack's help correctly for a command that has the option and
     one that does not.
   - It goes out in the same release and changelog as FR-006.
+- **FR-008**: With `key`, `spack_gpg_key` MUST run `spack gpg trust
+  --yes-to-all <file>` where that command's help lists `--yes-to-all`, and
+  `spack gpg trust <file>` where it does not, whatever `yes_to_all` says, as
+  FR-001 does for `from_mirrors`. This fixes the released defect that a key
+  file cannot be trusted on Spack 1.0 or 1.1; the changelog entry of FR-006
+  names it, and whether it goes out as a patch is asked of the operator with
+  the release (Principle V).
 
 ## Success Criteria *(mandatory)*
 
@@ -204,17 +222,25 @@ and pass with the fix.
   run reports no change; the role-level integration test (FR-003) shows it.
 - **SC-002**: The new integration tests, module and role, fail on 0.0.2's
   module and pass on the fixed one, through `just full-test`.
+- **SC-004**: `spack_gpg_key`, with `key` and with `from_mirrors`, runs on
+  Spack 1.0 and 1.1 without an `unrecognized arguments` error: held by unit
+  tests against a stand-in `spack` that behaves as they do (FR-004), and
+  tried once by hand against the real 1.0.0 and 1.1.0, recorded in
+  [research.md](research.md).
 - **SC-003**: After the release, the Cloud-Sandbox's playbooks can replace
   their `command` steps with `from_mirrors` again; that change is theirs, not
   this spec's.
 
 ## Assumptions
 
-- Spack 1.2.0's `spack buildcache keys` has `-y, --yes-to-all` ("assume 'yes'
-  is the answer to every confirmation request"); seen on the head node,
-  2026-11-24.
-- The collection's floor stays Spack 1.0; whether 1.0 and 1.1 have the option
-  is to be checked while planning.
+- Spack 1.2.0's `spack buildcache keys` and `spack gpg trust` have
+  `-y, --yes-to-all` ("assume 'yes' is the answer to every confirmation
+  request"); Spack 1.0.0 and 1.1.0 have neither the option nor the prompt.
+  Tried against the real Spack while planning ([research.md](research.md),
+  R1 and R2).
+- The collection's floor stays Spack 1.0, and the integration tests stay
+  pinned to 1.2.0 (moving the pin, or testing more versions, is a spec of its
+  own, Principle III).
 
 ## Dependencies
 
