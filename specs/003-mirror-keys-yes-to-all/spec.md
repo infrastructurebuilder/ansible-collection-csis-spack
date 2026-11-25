@@ -4,16 +4,18 @@
 
 **Created**: 2026-11-24
 
-**Status**: Draft. Written in the Cloud-Sandbox workshop's session, on the
-operator's instruction ("write a new spec for the collection project"), and
-committed on `develop`; to be clarified, planned and built in a session of
-this repository's own. Clarified on `develop` and planned on its feature
-branch, 2026-11-24. **Done 2026-11-25** on
-`feature/mirror-keys-yes-to-all`: every task but T038 ticked, and
-`just full-test` passed (270 unit tests; 15 integration tests, each of five
-run against the real Spack 1.0.0, 1.1.0 and 1.2.0; `ansible-test sanity`;
-Galaxy's import checks). Not yet merged into `develop` or released: both on
-the operator's word (T038).
+**Status**: Done 2026-11-25, not yet released. Built on
+`feature/mirror-keys-yes-to-all`, where `just full-test` passed (270 unit
+tests; 15 integration tests, each of five run against the real Spack 1.0.0,
+1.1.0 and 1.2.0; `ansible-test sanity`; Galaxy's import checks), and
+squash-merged into `develop` as `058744b`; `develop` and the feature branch
+were pushed the same day. What is left is T038's release of 0.0.3, on the
+operator's word.
+
+Written in the Cloud-Sandbox workshop's session, on the operator's
+instruction ("write a new spec for the collection project"), and committed
+on `develop`; clarified there and planned on its feature branch, 2026-11-24,
+in a session of this repository's own.
 
 **Input**: a failure on a real head node, in the Cloud-Sandbox workshop's
 spec 002 (a RHEL 10 build cache), 2026-11-24. A play applying the `setup`

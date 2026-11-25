@@ -5,7 +5,8 @@
 **Created**: 2026-11-17
 
 **Status**: Done 2026-11-17 on `feature/setup-executable-rename`: `just test`
-and `just full-test` pass. It goes out with the next release.
+and `just full-test` pass. It went out in 0.0.1 (2026-11-18), the first
+release; see `CHANGELOG.md`.
 
 **Input**: User description: "what is `spack_setup_spack` referred to in the
 examples?", then "can we change that to `spack_setup_executable`?"
