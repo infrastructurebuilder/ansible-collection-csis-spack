@@ -155,6 +155,6 @@ by item 6; the file had not existed before, and was removed.)
   it and run without it where it does not, whatever `yes_to_all` says. The
   `gpg trust -y` defect (R2, finding 2) is fixed in this spec (FR-008).
   Recorded in the spec's Clarifications.
-- Whether the release is a patch (0.0.3) or a minor version (0.1.0, outside
-  the Cloud-Sandbox's `<0.1.0` pin) is asked of the operator with the
-  release (FR-006, Principle V).
+- **The release is 0.0.3** (operator, 2026-11-24), not 0.1.0, so that the
+  Cloud-Sandbox's `<0.1.0` pin takes it (FR-006). When to release is still
+  the operator's word.

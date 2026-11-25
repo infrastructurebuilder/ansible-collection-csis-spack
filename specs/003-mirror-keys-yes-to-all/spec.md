@@ -90,6 +90,10 @@ the same day by running `spack buildcache keys --install --trust
   Story 1's three scenarios; the role test
   (`tests/integration/test_real_setup.py`) runs one `from_mirrors` step twice,
   a change and then none (FR-003, SC-001).
+- Q: Is the release a patch (0.0.3) or a minor version (0.1.0), given that
+  it adds an option and the Cloud-Sandbox pins `<0.1.0`? → A: 0.0.3
+  (FR-006). Asked during planning; when to release is still the operator's
+  word.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -178,9 +182,11 @@ and pass with the fix.
   asks for: every key the mirrors publish, with no fingerprint to check them
   against. It SHOULD point at `key` with `fingerprint` as the way to trust one
   known key.
-- **FR-006**: The fix MUST go out in a release (the next of the 0.0 series, by
-  semantic versioning a patch), with a changelog entry naming the failure it
-  fixes; releasing is on the operator's word (Principle V).
+- **FR-006**: The fix MUST go out in release 0.0.3, the operator's choice
+  although the release also adds an option (FR-007), so that the
+  Cloud-Sandbox's pin (`>=0.0.1,<0.1.0`) takes it. Its changelog entry names
+  the failures it fixes (FR-001, FR-008) and the option it adds. When to
+  release is on the operator's word (Principle V).
 - **FR-007**: Every module in `plugins/modules/` that runs Spack MUST take a
   `yes_to_all` option (true or false, default false):
   - When it is true, before the module runs a Spack command it reads that
@@ -210,8 +216,7 @@ and pass with the fix.
   `spack gpg trust <file>` where it does not, whatever `yes_to_all` says, as
   FR-001 does for `from_mirrors`. This fixes the released defect that a key
   file cannot be trusted on Spack 1.0 or 1.1; the changelog entry of FR-006
-  names it, and whether it goes out as a patch is asked of the operator with
-  the release (Principle V).
+  names it, and it goes out in 0.0.3 (FR-006).
 
 ## Success Criteria *(mandatory)*
 

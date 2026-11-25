@@ -63,7 +63,7 @@ tests; 2 integration tests; `CHANGELOG.md`; the README if it lists options
 | II. A Repeat Run Changes Nothing, and Says So | Change reporting is untouched: `spack_gpg_key` still compares `gpg list --trusted` before and after (FR-002); R4 shows a second run trusts nothing new. Check mode runs no command that changes anything; a help call changes nothing. | Pass |
 | III. Written to What Spack Does | Tried against the real 1.0.0, 1.1.0 and 1.2.0 before design (R1 to R4). The check reads Spack's own help, not a list from memory. The stand-in's help follows what the real one printed. The pin stays 1.2.0. | Pass |
 | IV. Acceptance Tests Run Through the Justfile | Unit tests first, seen to fail; two integration tests that fail on 0.0.2 (SC-002); `just test` after each change, `just full-test` before done. No new tool is called outside the `Justfile`. | Pass |
-| V. The Operator Decides | Five answers are in the spec's Clarifications, one of them changed during planning on the operator's word. The release, and whether it is a patch, are asked with the release. Committed locally. | Pass |
+| V. The Operator Decides | Six answers are in the spec's Clarifications, one of them changed during planning on the operator's word. The release is 0.0.3 (operator); when to cut it is asked then. Committed locally. | Pass |
 | The ATTIC | Not consulted. (`plugins/module_utils/spack.py` has a comment pointing into the ATTIC; it was not followed.) | Pass |
 
 No violations; Complexity Tracking is not needed.
