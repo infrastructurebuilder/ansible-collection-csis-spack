@@ -22,6 +22,14 @@ description:
   - In check mode a key file whose fingerprint is known, from I(fingerprint)
     or by reading the file with C(gpg), is reported exactly. What the mirrors
     would give cannot be known without fetching it, and is not previewed.
+  - Spack 1.2 asks whether to trust each key, C([y/N]), before it trusts
+    it, even a key it trusts already. Ansible gives Spack no terminal to answer
+    from, so the question would fail the task. Both trusts are therefore run
+    with C(--yes-to-all) on Spack 1.2 and later. Spack 1.0 and 1.1 do not
+    ask, and refuse the option, so it is left out there. Nothing is ever
+    answered on Spack's input.
+  - The trusted keys are read from C(spack gpg list --trusted --fmt colons),
+    or, on Spack 1.0 and 1.1, which have no C(--fmt), from gpg's own listing.
   - Needs Spack 1.0 or later.
 author:
   - infrastructurebuilder (@infrastructurebuilder)
@@ -40,6 +48,10 @@ options:
     description:
       - Trust the keys published by the binary mirrors Spack is configured
         with.
+      - Every key the mirrors publish is trusted, without confirmation and
+        with no fingerprint to check it against; that is what this option
+        asks for. To trust one known key, give I(key) with I(fingerprint)
+        instead.
     type: bool
     default: false
   spack:
@@ -47,6 +59,20 @@ options:
       - The Spack executable, as a path or a name looked up on C(PATH).
     type: str
     default: spack
+  yes_to_all:
+    description:
+      - Answer "yes" to every confirmation Spack asks of a command this module
+        runs to change something, by giving that command C(--yes-to-all) where
+        the installed Spack's help for it lists the option. That includes
+        confirmations before removing or overwriting something. Without it,
+        such a confirmation fails the task, since Ansible gives Spack no
+        terminal to answer from.
+      - Changes nothing in this module, which answers Spack's confirmation for
+        the keys it is asked to trust in any case. It is here so that every
+        module of the collection that runs Spack takes it.
+    type: bool
+    default: false
+    version_added: 0.0.3
 notes:
   - Supports check mode, within the limits described above.
 """
@@ -93,7 +119,7 @@ from ansible_collections.infrastructurebuilder.csis_spack.plugins.module_utils.s
 
 
 def trusted(spack):
-    return set(fingerprints(spack.run(["gpg", "list", "--trusted", "--fmt", "colons"])))
+    return set(spack.trusted_keys())
 
 
 def key_file(module, key, scratch):
@@ -124,6 +150,7 @@ def main():
             fingerprint=dict(type="str"),
             from_mirrors=dict(type="bool", default=False),
             spack=dict(type="str", default="spack"),
+            yes_to_all=dict(type="bool", default=False),
         ),
         required_by=dict(fingerprint=["key"]),
         supports_check_mode=True,
@@ -139,7 +166,10 @@ def main():
             module.fail_json(msg="fingerprint must be 40 hexadecimal digits", **result)
     scratch = tempfile.mkdtemp(prefix="spack-gpg-key-")
     try:
-        spack = Spack(module, params["spack"])
+        # Both trusts answer Spack's question, where it asks, whatever
+        # yes_to_all says: asking for a key, or for the mirrors' keys, is the
+        # consent.
+        spack = Spack(module, params["spack"], yes_to_all=params["yes_to_all"])
         result["spack_version"] = ".".join(str(part) for part in spack.require_version())
         before = trusted(spack)
         expected = set()  # type: set[str]
@@ -160,12 +190,13 @@ def main():
             else:
                 result["previewed"] = False
             if not module.check_mode and (found is None or expected):
-                spack.run(["gpg", "trust", "-y", path])
+                spack.run(spack.trusting(["gpg", "trust", path], words=2))
         if params["from_mirrors"]:
             if module.check_mode:
                 result["previewed"] = False
             else:
-                spack.run(["buildcache", "keys", "--install", "--trust"])
+                keys = ["buildcache", "keys", "--install", "--trust"]
+                spack.run(spack.trusting(keys, words=2))
         if module.check_mode:
             result["trusted"] = sorted(expected)
         else:

@@ -46,6 +46,19 @@ options:
       - The Spack executable, as a path or a name looked up on C(PATH).
     type: str
     default: spack
+  yes_to_all:
+    description:
+      - Answer "yes" to every confirmation Spack asks of a command this module
+        runs to change something, by giving that command C(--yes-to-all) where
+        the installed Spack's help for it lists the option. The help is read
+        only when this is true, once for each command.
+      - That includes confirmations before removing or overwriting something.
+        Without it, such a confirmation fails the task, since Ansible gives
+        Spack no terminal to answer from.
+      - A command that already has C(-y) or C(--yes-to-all) is left as it is.
+    type: bool
+    default: false
+    version_added: 0.0.3
   state:
     description:
       - C(concretized) concretizes only; C(installed) also installs.
@@ -221,7 +234,7 @@ def concretize(spack, path, fresh):
     args = ["concretize", "--force", "-q"]
     if fresh:
         args.append("--fresh")
-    spack.run(args, env_path=path)
+    spack.run(spack.answered(args, words=1), env_path=path)
 
 
 def not_installed(spack, path):
@@ -298,7 +311,8 @@ def apply(module, spack, params, result):
     if params["state"] == "installed":
         installed_before = set(spack.installed(path))
         log_file = params["log_file"] or os.path.join(path, "log.install")
-        spack.run(["install"] + params["install_args"], env_path=path, log_file=log_file)
+        install = spack.answered(["install", *params["install_args"]], words=1)
+        spack.run(install, env_path=path, log_file=log_file)
         result["log_file"] = log_file
         after = spack.installed(path)
         result["installed"] = [
@@ -317,7 +331,7 @@ def apply(module, spack, params, result):
                     args = ["module", system, "refresh", "-y"]
                     if params["delete_tree"]:
                         args.append("--delete-tree")
-                    spack.run(args, env_path=path)
+                    spack.run(spack.answered(args, words=3), env_path=path)
                     if module_tree_digest(roots[system]) != tree_before:
                         result["modules_refreshed"].append(system)
                 write_state(
@@ -339,6 +353,7 @@ def main():
         argument_spec=dict(
             path=dict(type="path", required=True),
             spack=dict(type="str", default="spack"),
+            yes_to_all=dict(type="bool", default=False),
             state=dict(type="str", choices=["concretized", "installed"], default="installed"),
             fresh=dict(type="bool", default=True),
             install_args=dict(type="list", elements="str", default=[]),
@@ -361,7 +376,7 @@ def main():
     if not os.path.isfile(os.path.join(params["path"], "spack.yaml")):
         module.fail_json(msg="%s is not a Spack environment: it has no spack.yaml" % params["path"], **result)
     try:
-        spack = Spack(module, params["spack"])
+        spack = Spack(module, params["spack"], yes_to_all=params["yes_to_all"])
         result["spack_version"] = ".".join(str(part) for part in spack.require_version())
         if module.check_mode:
             check(module, spack, params, result)

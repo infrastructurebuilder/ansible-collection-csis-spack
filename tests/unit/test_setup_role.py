@@ -34,6 +34,8 @@ def test_the_roles_defaults_are_empty_and_name_no_site() -> None:
         # Plain `spack`, unless the variable's name before 0.0.1 is set.
         "spack_setup_executable": "{{ spack_setup_spack | default('spack') }}",
         "spack_setup_scope": "site",
+        # Off: a confirmation is answered only where a site asks for it.
+        "spack_setup_yes_to_all": False,
     }
 
 
@@ -50,7 +52,9 @@ def test_every_step_is_carried_out_in_the_order_written(spack: Spack) -> None:
     assert [step["step"] for step in played.results] == list(range(1, len(STEPS) + 1))
     assert played.changed == [True, False, True, True, True, True, False]
     order = [
-        call[:2] for call in spack.calls() if call[0] in ("compiler", "external", "mirror", "buildcache")
+        call[:2]
+        for call in spack.calls()
+        if call[0] in ("compiler", "external", "mirror", "buildcache") and call[-1] != "--help"
     ]
     assert order == [
         ["compiler", "find"],
@@ -188,3 +192,22 @@ def test_check_mode_previews_what_is_declared_and_runs_no_discovery(spack: Spack
     assert spack.state.get("scopes", {}) == {}
     assert spack.calls("compiler") == []
     assert spack.calls("mirror", "add") == []
+
+
+def gc_calls(spack: Spack) -> list[list[str]]:
+    return [call for call in spack.calls("gc") if call[-1] != "--help"]
+
+
+def test_the_roles_yes_to_all_answers_every_step(spack: Spack) -> None:
+    steps = [{"kind": "command", "args": ["gc"], "changes": "always"}]
+    played = spack.setup(steps, spack_setup_yes_to_all=True)
+    assert played.rc == 0, played.output
+    assert gc_calls(spack) == [["gc", "--yes-to-all"]]
+
+
+def test_a_steps_own_yes_to_all_overrides_the_roles(spack: Spack) -> None:
+    off = [{"kind": "command", "args": ["gc"], "changes": "always", "yes_to_all": False}]
+    assert spack.setup(off, spack_setup_yes_to_all=True).rc == 0
+    on = [{"kind": "command", "args": ["gc"], "changes": "always", "yes_to_all": True}]
+    assert spack.setup(on).rc == 0
+    assert gc_calls(spack) == [["gc"], ["gc", "--yes-to-all"]]

@@ -143,6 +143,26 @@ def test_a_scope_that_has_not_been_made_yet_holds_nothing_and_can_be_written(spa
     assert spack.scope("user", "config") == {"build_jobs": 4}
 
 
+def test_spack_1_0_reads_and_writes_a_scope_not_made_yet(spack: Spack) -> None:
+    # Through "spack python -c", as 1.0 has no "config get --json" (research.md, R7, R8).
+    spack.update(version="1.0.0 (73eaea13f381e3495299284856fd02a64e1d154c)", unmade_scopes=["user"])
+    result = config(spack, {"config": {"build_jobs": 4}}, scope="user")
+    assert (result.get("failed"), result["changed"]) == (False, True)
+    assert spack.scope("user", "config") == {"build_jobs": 4}
+    assert spack.calls("python")
+    assert config(spack, {"config": {"build_jobs": 4}}, scope="user")["changed"] is False
+
+
+def test_spack_1_1_cannot_write_a_scope_whose_directory_is_missing_and_says_so(spack: Spack) -> None:
+    spack.update(version="1.1.0 (0c2be44e4ece21eb091ad5de4c97716b7c6d4c87)", unmade_scopes=["user"])
+    preview = config(spack, {"config": {"build_jobs": 4}}, scope="user", check=True)
+    assert (preview.get("failed"), preview["changed"]) == (False, True)
+    result = config(spack, {"config": {"build_jobs": 4}}, scope="user")
+    assert result["failed"] is True
+    assert "Spack 1.1.0 has no configuration scope 'user' until its directory exists" in result["msg"]
+    assert "Make the directory, then run again" in result["msg"]
+
+
 def test_any_other_failure_to_read_a_scope_still_fails(spack: Spack) -> None:
     spack.update(fail={"config": True})
     assert config(spack, {"config": {"build_jobs": 4}})["failed"] is True
@@ -182,3 +202,21 @@ def test_a_mapping_that_keeps_other_keys_is_not_removed(spack: Spack) -> None:
     )
     assert result["paths"] == ["config:install_tree:padded_length"]
     assert spack.scope("user", "config") == {"install_tree": {"root": "/opt/spack/store"}}
+
+
+def helps(spack: Spack) -> list[list[str]]:
+    """The help calls the stand-in saw, as the command words each was for."""
+    return [call[:-1] for call in spack.calls() if call[-1:] == ["--help"]]
+
+
+def test_yes_to_all_reads_the_config_help_and_adds_nothing_it_does_not_list(spack: Spack) -> None:
+    # "config" takes --scope before its subcommand, so its own help decides (research.md, R5).
+    result = config(spack, {"config": {"build_jobs": 4}}, yes_to_all=True)
+    assert result["failed"] is False, result.get("msg")
+    assert helps(spack) == [["config"]]
+    assert all("--yes-to-all" not in call for call in spack.calls("config"))
+
+
+def test_without_yes_to_all_a_configuration_reads_no_help(spack: Spack) -> None:
+    config(spack, {"config": {"build_jobs": 4}})
+    assert helps(spack) == []

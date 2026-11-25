@@ -64,9 +64,30 @@ options:
       - The Spack executable, as a path or a name looked up on C(PATH).
     type: str
     default: spack
+  yes_to_all:
+    description:
+      - Answer "yes" to every confirmation Spack asks of a command this module
+        runs to change something, by giving that command C(--yes-to-all) where
+        the installed Spack's help for it lists the option. The help is read
+        only when this is true, once for each command.
+      - That includes confirmations before removing or overwriting something.
+        Without it, such a confirmation fails the task, since Ansible gives
+        Spack no terminal to answer from.
+      - A command that already has C(-y) or C(--yes-to-all) is left as it is.
+      - The command is read from the leading words of I(args), up to the first
+        option. A subcommand written after an option of its parent, as in
+        C(config --scope user add), is not seen, and the parent's help decides;
+        no such subcommand has C(--yes-to-all) in Spack 1.0 to 1.2.
+    type: bool
+    default: false
+    version_added: 0.0.3
 notes:
   - In check mode the command is not run. A change is reported as possible
     unless I(changes=never), or I(changes=creates) and the path exists.
+  - On Spack 1.1, a configuration scope whose directory does not exist yet
+    (the user scope, C(~/.spack), or the system scope, C(/etc/spack)) cannot
+    be written to; Spack 1.1 leaves it out. The module fails and says so;
+    make the directory first. Spack 1.0 and 1.2 make it on the first write.
 """
 
 EXAMPLES = r"""
@@ -80,6 +101,15 @@ EXAMPLES = r"""
     args: [repo, add, --scope, site, /opt/spack-repos/ours]
     changes: config
     sections: [repos]
+
+# Spack asks before removing anything; under Ansible, with no terminal to
+# answer from, the question would fail the task. yes_to_all answers "yes" to
+# every confirmation gc asks: here, to removing every unused package.
+- name: Remove the packages nothing needs any more
+  infrastructurebuilder.csis_spack.spack_command:
+    args: [gc]
+    changes: always
+    yes_to_all: true
 """
 
 RETURN = r"""
@@ -122,6 +152,7 @@ def main():
             scope=dict(type="str", default="site"),
             env=dict(type="path"),
             spack=dict(type="str", default="spack"),
+            yes_to_all=dict(type="bool", default=False),
         ),
         required_if=[("changes", "creates", ["creates"])],
         supports_check_mode=True,
@@ -132,7 +163,7 @@ def main():
     if not params["args"]:
         module.fail_json(msg="args is empty: there is no command to run", **result)
     try:
-        spack = Spack(module, params["spack"])
+        spack = Spack(module, params["spack"], yes_to_all=params["yes_to_all"])
         result["spack_version"] = ".".join(str(part) for part in spack.require_version())
         if how == "creates" and os.path.exists(params["creates"]):
             module.exit_json(**result)
@@ -141,7 +172,7 @@ def main():
             module.exit_json(**result)
         config = Configuration(spack, params["scope"])
         before = {section: config.get(section) for section in params["sections"]} if how == "config" else {}
-        result["stdout"] = spack.run(params["args"], env_path=params["env"])
+        result["stdout"] = spack.run(spack.answered(params["args"]), env_path=params["env"])
         result["ran"] = True
         if how == "config":
             result["changed"] = before != {section: config.get(section) for section in params["sections"]}

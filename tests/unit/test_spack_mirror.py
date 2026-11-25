@@ -84,3 +84,20 @@ def test_check_mode_says_what_it_would_do_and_does_not(spack: Spack) -> None:
 def test_another_scope_can_be_named(spack: Spack) -> None:
     mirror(spack, url=URL, scope="user")
     assert spack.scope("user", "mirrors") == {"site-cache": URL}
+
+
+def helps(spack: Spack) -> list[list[str]]:
+    """The help calls the stand-in saw, as the command words each was for."""
+    return [call[:-1] for call in spack.calls() if call[-1:] == ["--help"]]
+
+
+def test_yes_to_all_reads_the_mirror_help_and_adds_nothing_it_does_not_list(spack: Spack) -> None:
+    result = mirror(spack, url="https://cache.example.org", yes_to_all=True)
+    assert result["failed"] is False, result.get("msg")
+    assert helps(spack) == [["mirror", "add"]]
+    assert all("--yes-to-all" not in call for call in spack.calls("mirror", "add"))
+
+
+def test_without_yes_to_all_a_mirror_reads_no_help(spack: Spack) -> None:
+    mirror(spack, url="https://cache.example.org")
+    assert helps(spack) == []

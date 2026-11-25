@@ -8,5 +8,6 @@
     key: "{{ spack_setup_step.key | default(omit) }}"
     fingerprint: "{{ spack_setup_step.fingerprint | default(omit) }}"
     from_mirrors: "{{ spack_setup_step.from_mirrors | default(omit) }}"
+    yes_to_all: "{{ spack_setup_step.yes_to_all | default(spack_setup_yes_to_all) }}"
   environment: "{{ spack_setup_step_environment }}"
   register: spack_setup_done

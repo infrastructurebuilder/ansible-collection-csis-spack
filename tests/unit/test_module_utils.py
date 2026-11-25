@@ -3,15 +3,21 @@
 from __future__ import annotations
 
 import json
+import os
+import subprocess
 from pathlib import Path
 
 import pytest
 from ansible_collections.infrastructurebuilder.csis_spack.plugins.module_utils.spack import (
+    Configuration,
+    Spack,
     SpackError,
+    behaviour,
     data_digest,
     external_specs,
     file_digest,
     fingerprints,
+    listed_fingerprints,
     lock_specs,
     merged,
     mirror_record,
@@ -30,6 +36,7 @@ from ansible_collections.infrastructurebuilder.csis_spack.plugins.module_utils.s
     without,
     write_state,
 )
+from conftest import Spack as StandIn
 
 
 def test_versions_are_read_from_spack_version() -> None:
@@ -218,3 +225,195 @@ def test_an_absent_plan_removes_the_highest_mapping_it_would_empty() -> None:
     partly = {"providers": {"mpi": ["x"], "blas": ["y"]}}
     assert plan_absent(partly, {"providers": {"mpi": None}}) == [["providers", "mpi"]]
     assert plan_absent(partly, {"providers": {"mpi": None, "blas": None}}) == [["providers"]]
+
+
+# --- Answering Spack's confirmations: Spack.answered() ------------------------
+#
+# Against the stand-in spack, whose help texts are the real Spack's
+# (fake_spack_help.json), through a module object that runs it as
+# AnsibleModule.run_command would.
+
+
+class StandInModule:
+    """What Spack needs of an AnsibleModule: run_command, with the stand-in's environment."""
+
+    def __init__(self, environ: dict[str, str]) -> None:
+        self.environ = environ
+
+    def run_command(self, command: list[str]) -> tuple[int, str, str]:
+        done = subprocess.run(
+            command, env=os.environ | self.environ, capture_output=True, text=True, check=False
+        )
+        return done.returncode, done.stdout, done.stderr
+
+
+def answering(spack: StandIn, *, yes_to_all: bool = False) -> Spack:
+    return Spack(StandInModule(spack.environ), str(spack.bin / "spack"), yes_to_all=yes_to_all)
+
+
+def helps(spack: StandIn) -> list[list[str]]:
+    """The help calls the stand-in saw, as the command words each was for."""
+    return [call[:-1] for call in spack.calls() if call[-1:] == ["--help"]]
+
+
+def test_with_the_flag_off_and_no_consent_nothing_is_added_or_read(spack: StandIn) -> None:
+    assert answering(spack).answered(["gc"], words=1) == ["gc"]
+    assert answering(spack).answered(["gc"]) == ["gc"]
+    assert helps(spack) == []
+
+
+def test_the_option_goes_straight_after_the_commands_words(spack: StandIn) -> None:
+    assert answering(spack, yes_to_all=True).answered(["install", "--fake"], words=1) == [
+        "install",
+        "--yes-to-all",
+        "--fake",
+    ]
+    assert helps(spack) == [["install"]]
+
+
+def test_a_command_whose_help_does_not_list_it_is_left_alone(spack: StandIn) -> None:
+    assert answering(spack, yes_to_all=True).answered(["mirror", "add", "n", "u"], words=2) == [
+        "mirror",
+        "add",
+        "n",
+        "u",
+    ]
+    assert helps(spack) == [["mirror", "add"]]
+
+
+def test_a_command_already_answered_is_left_alone_unread(spack: StandIn) -> None:
+    answers = answering(spack, yes_to_all=True)
+    assert answers.answered(["gc", "-y"], words=1) == ["gc", "-y"]
+    assert answers.answered(["module", "tcl", "refresh", "--yes-to-all"], words=3) == [
+        "module",
+        "tcl",
+        "refresh",
+        "--yes-to-all",
+    ]
+    assert helps(spack) == []
+
+
+V1_0 = "1.0.0 (73eaea13f381e3495299284856fd02a64e1d154c)"
+V1_1 = "1.1.0 (0c2be44e4ece21eb091ad5de4c97716b7c6d4c87)"
+
+
+def test_each_version_has_its_row_and_a_newer_one_the_last() -> None:
+    names = ("config_json", "gpg_colons", "trust_answers", "scope_needs_directory")
+    assert behaviour((1, 0, 0)) == dict(zip(names, (False, False, False, False), strict=True))
+    assert behaviour((1, 0, 4)) == behaviour((1, 0, 0))
+    assert behaviour((1, 1, 1)) == dict(zip(names, (True, False, False, True), strict=True))
+    assert behaviour((1, 2, 2)) == dict(zip(names, (True, True, True, False), strict=True))
+    assert behaviour((1, 3, 0)) == behaviour((1, 2, 0)) == behaviour((2, 0, 0))
+
+
+def test_a_trust_is_answered_where_spack_asks_with_the_flag_off(spack: StandIn) -> None:
+    assert answering(spack).trusting(["gpg", "trust", "k.pub"], words=2) == [
+        "gpg",
+        "trust",
+        "--yes-to-all",
+        "k.pub",
+    ]
+    assert helps(spack) == []
+
+
+def test_spack_1_0_and_1_1_are_not_given_the_option_they_do_not_have(spack: StandIn) -> None:
+    for version in (V1_0, V1_1):
+        spack.update(version=version)
+        answers = answering(spack)
+        assert answers.trusting(["gpg", "trust", "k.pub"], words=2) == ["gpg", "trust", "k.pub"]
+        keys = ["buildcache", "keys", "--install", "--trust"]
+        assert answers.trusting(keys, words=2) == keys
+
+
+def test_configuration_is_read_as_json_or_through_spack_python_on_1_0(spack: StandIn) -> None:
+    spack.update(scopes={"site": {"config": {"build_jobs": 4}}})
+    assert answering(spack).config_section("config", scope="site") == {"build_jobs": 4}
+    assert spack.calls("config")[-1] == ["config", "--scope", "site", "get", "--json", "config"]
+    spack.update(version=V1_0)
+    assert answering(spack).config_section("config", scope="site") == {"build_jobs": 4}
+    assert answering(spack).config_section("config")["build_jobs"] == 4
+    python = spack.calls("python")
+    assert [call[:2] for call in python] == [["python", "-c"], ["python", "-c"]]
+    assert "get_config('config', scope='site')" in python[0][2]
+    assert "spack.config.get('config')" in python[1][2]
+
+
+def test_a_scope_not_made_yet_is_empty_in_each_versions_words(spack: StandIn) -> None:
+    for version in (V1_0, V1_1, "1.2.0"):
+        spack.update(version=version, unmade_scopes=["user"])
+        assert Configuration(answering(spack), "user").get("mirrors") == {}, version
+
+
+def test_the_trusted_keys_are_read_without_fmt_on_1_0_and_1_1(spack: StandIn) -> None:
+    keys = ["7500481A18F8F903534D953AC6F328B79BE7166C", "E0C894426081BF7A184E2AC8F2D4DFC4FD63F7FB"]
+    spack.update(trusted=keys)
+    assert answering(spack).trusted_keys() == keys
+    for version in (V1_0, V1_1):
+        spack.update(version=version)
+        assert answering(spack).trusted_keys() == keys
+    assert spack.calls("gpg", "list")[-1] == ["gpg", "list", "--trusted"]
+
+
+def test_gpgs_own_listing_gives_its_fingerprints() -> None:
+    # As Spack 1.1.0 printed it for the throwaway key (research.md, R6).
+    printed = (
+        "/tmp/csis-q-6X9K/pubring.kbx\n----------------------------\n"
+        "pub   rsa2048 2026-11-14 [SC]\n      7500481A18F8F903534D953AC6F328B79BE7166C\n"
+        "uid           [ultimate] Test Mirror <test@example.invalid>\n\n"
+    )
+    assert listed_fingerprints(printed) == ["7500481A18F8F903534D953AC6F328B79BE7166C"]
+    assert listed_fingerprints("") == []
+
+
+def test_a_help_is_read_once_in_a_run(spack: StandIn) -> None:
+    answers = answering(spack, yes_to_all=True)
+    answers.answered(["gc"], words=1)
+    answers.answered(["gc", "--keep-going"], words=1)
+    assert helps(spack) == [["gc"]]
+
+
+def test_the_command_is_walked_to_from_its_first_word(spack: StandIn) -> None:
+    answers = answering(spack, yes_to_all=True)
+    assert answers.answered(["module", "tcl", "refresh", "--delete-tree"]) == [
+        "module",
+        "tcl",
+        "refresh",
+        "--yes-to-all",
+        "--delete-tree",
+    ]
+    assert helps(spack) == [["module"], ["module", "tcl"], ["module", "tcl", "refresh"]]
+    assert answers.answered(["gc"]) == ["gc", "--yes-to-all"]
+
+
+def test_the_walk_stops_at_the_first_option(spack: StandIn) -> None:
+    command = ["config", "--scope", "user", "add", "a:b"]
+    assert answering(spack, yes_to_all=True).answered(command) == command
+    assert helps(spack) == [["config"]]
+
+
+def test_help_is_never_asked_for_after_a_word_that_is_not_a_subcommand(spack: StandIn) -> None:
+    command = ["buildcache", "keys", "mirror1"]
+    assert answering(spack, yes_to_all=True).answered(command) == [
+        "buildcache",
+        "keys",
+        "--yes-to-all",
+        "mirror1",
+    ]
+    assert helps(spack) == [["buildcache"], ["buildcache", "keys"]]
+
+
+def test_an_alias_of_a_subcommand_is_walked_to(spack: StandIn) -> None:
+    answering(spack, yes_to_all=True).answered(["buildcache", "create", "--only", "package", "m"])
+    assert helps(spack)[-1] == ["buildcache", "create"]
+
+
+def test_no_command_words_read_no_help(spack: StandIn) -> None:
+    answers = answering(spack, yes_to_all=True)
+    assert answers.answered(["-d", "install"]) == ["-d", "install"]
+    assert answers.answered([]) == []
+    assert helps(spack) == []
+
+
+def test_a_help_that_fails_counts_as_not_taking_it(spack: StandIn) -> None:
+    assert answering(spack, yes_to_all=True).answered(["nosuch", "x"]) == ["nosuch", "x"]
+    assert helps(spack) == [["nosuch"]]

@@ -154,16 +154,196 @@ def parse_mirror_list(output):
     return mirrors
 
 
+# How the Spack versions the collection supports differ, in the commands it
+# runs itself, by (major, minor). A Spack newer than the last row is read as
+# the last row. Each row was tried against the real Spack 1.0.0, 1.1.0 and
+# 1.2.0; see specs/003-mirror-keys-yes-to-all/research.md (R2, R7, R8).
+#   config_json    "config get" has --json; without it the configuration is
+#                  printed as JSON through "spack python -c"
+#   gpg_colons     "gpg list" has --fmt colons; without it the fingerprints are
+#                  read from gpg's own listing
+#   trust_answers  "gpg trust" and "buildcache keys --trust" ask before trusting
+#                  each key, and take --yes-to-all to answer (without it they
+#                  neither ask nor take the option)
+#   scope_needs_directory
+#                  a configuration scope whose directory does not exist is no
+#                  scope at all, and cannot be written to: the user and system
+#                  scopes are "optional" includes (etc/spack/include.yaml),
+#                  which Spack 1.1 leaves out while their directory is missing.
+#                  Spack 1.0 and 1.2 keep them, and make the directory on the
+#                  first write. The module does not make it (Spack's own
+#                  commands only; the operator's decision, 2026-11-25): it
+#                  says what is missing.
+BEHAVIOUR = {
+    (1, 0): {
+        "config_json": False,
+        "gpg_colons": False,
+        "trust_answers": False,
+        "scope_needs_directory": False,
+    },
+    (1, 1): {
+        "config_json": True,
+        "gpg_colons": False,
+        "trust_answers": False,
+        "scope_needs_directory": True,
+    },
+    (1, 2): {
+        "config_json": True,
+        "gpg_colons": True,
+        "trust_answers": True,
+        "scope_needs_directory": False,
+    },
+}
+# Spack 1.1's words for a scope it does not have.
+NO_SUCH_SCOPE = re.compile(r"argument --scope: invalid choice: '([^']+)'")
+
+
+def behaviour(version):
+    """Give the row of BEHAVIOUR for a version: its own, or the last row before it."""
+    rows = [row for row in sorted(BEHAVIOUR) if row <= tuple(version[:2])]
+    return BEHAVIOUR[rows[-1] if rows else min(BEHAVIOUR)]
+
+
+# Printing configuration as JSON where "config get" has no --json (Spack 1.0),
+# through Spack's own Python: every scope merged, or one scope. One line:
+# "spack python -c" compiles a single statement (Spack 1.0.0 refused two
+# lines with "multiple statements found while compiling a single statement").
+CONFIG_MERGED = "import json, spack.config; print(json.dumps({%r: spack.config.get(%r) or {}}))"
+CONFIG_SCOPE = (
+    "import json, spack.config; print(json.dumps({%r: spack.config.CONFIG.get_config(%r, scope=%r) or {}}))"
+)
+# A scope whose directory does not exist yet, as Spack 1.2 and 1.1 refuse it.
+MISSING_SCOPE = ("must refer to an existing scope", "argument --scope: invalid choice: %r")
+# A fingerprint in gpg's own listing: 40 hexadecimal digits on a line of their own.
+LISTED_FINGERPRINT = re.compile(r"^\s+([0-9A-Fa-f]{40})\s*$", re.MULTILINE)
+
+
+def listed_fingerprints(listing):
+    """Read the fingerprints out of gpg's own listing, as Spack 1.0 and 1.1 print it."""
+    return sorted({match.upper() for match in LISTED_FINGERPRINT.findall(listing)})
+
+
+# Answering Spack's confirmations. Under Ansible, Spack has no terminal: a
+# command that asks "[y/N]" reads end of file and fails. Many of Spack's
+# commands take -y, --yes-to-all to answer for it. For the collection's own
+# trusts, BEHAVIOUR says whether they ask; for any other command, where the
+# module was asked to answer (yes_to_all), the help of the Spack that is
+# installed is read, and the option given only where it is listed.
+YES_TO_ALL = "--yes-to-all"
+YES_OPTION = re.compile(r"^\s+(?:-y, )?--yes-to-all\b", re.MULTILINE)
+# A subcommand in a help: four spaces in, under "positional arguments:",
+# with an alias in brackets ("    push (create)   create a binary ...").
+SUBCOMMAND = re.compile(r"^    ([a-z][\w-]*)(?: \(([a-z][\w-]*)\))?(?:\s|$)")
+
+
+def read_help(text):
+    """Read a help: (whether it lists --yes-to-all, the names of its subcommands)."""
+    subcommands = set()
+    inside = False
+    for line in text.splitlines():
+        if line.startswith("positional arguments:"):
+            inside = True
+        elif line and not line[0].isspace():
+            inside = False
+        elif inside:
+            match = SUBCOMMAND.match(line)
+            if match:
+                subcommands.update(name for name in match.groups() if name)
+    return bool(YES_OPTION.search(text)), subcommands
+
+
 class Spack:
     """One Spack executable, run on behalf of an AnsibleModule."""
 
-    def __init__(self, module, executable):
+    def __init__(self, module, executable, yes_to_all=False):
         self.module = module
         if os.sep in executable:
             self.executable = executable
         else:
             self.executable = module.get_bin_path(executable, required=True)
         self.calls = []
+        self.yes_to_all = yes_to_all
+        self.helps = {}
+        self.found = None
+
+    def does(self, name):
+        """Say whether this Spack has one of the behaviours of BEHAVIOUR."""
+        if self.found is None:
+            self.version()
+        return behaviour(self.found)[name]
+
+    def trusting(self, args, words):
+        """Give a trust command's ``args``, answered where this Spack asks (BEHAVIOUR)."""
+        args = list(args)
+        if not self.does("trust_answers") or "-y" in args or YES_TO_ALL in args:
+            return args
+        return [*args[:words], YES_TO_ALL, *args[words:]]
+
+    def config_section(self, section, scope=None, env_path=None):
+        """Give one configuration section, as JSON from Spack: one scope, or every scope merged."""
+        if self.does("config_json"):
+            text = self.run(["config", *scope_args(scope), "get", "--json", section], env_path=env_path)
+        elif scope:
+            text = self.run(["python", "-c", CONFIG_SCOPE % (section, section, scope)], env_path=env_path)
+        else:
+            text = self.run(["python", "-c", CONFIG_MERGED % (section, section)], env_path=env_path)
+        return (json.loads(text) if text.strip() else {}).get(section) or {}
+
+    def trusted_keys(self):
+        """Give the fingerprints of the keys Spack trusts."""
+        if self.does("gpg_colons"):
+            return fingerprints(self.run(["gpg", "list", "--trusted", "--fmt", "colons"]))
+        return listed_fingerprints(self.run(["gpg", "list", "--trusted"]))
+
+    def help(self, words):
+        """Read ``spack <words> --help`` once: (takes --yes-to-all, subcommands).
+
+        A help that fails, as for a command Spack does not know, takes nothing.
+        """
+        words = tuple(words)
+        if words not in self.helps:
+            try:
+                text = self.run([*words, "--help"])
+            except SpackError:
+                text = ""
+            self.helps[words] = read_help(text)
+        return self.helps[words]
+
+    def command_words(self, args):
+        """Count the leading arguments that name the command, by walking its help.
+
+        The first argument, then each next one while the help so far lists it
+        as a subcommand. --help is only ever asked for after words known to be
+        commands: after anything else (a spec, a path, a script for
+        "spack python") it could reach that command's own arguments, or run it.
+        The walk stops at the first option, so a subcommand written after an
+        option of its parent ("config --scope user add") is not seen.
+        """
+        if not args or args[0].startswith("-"):
+            return 0
+        count = 1
+        while count < len(args) and args[count] in self.help(args[:count])[1]:
+            count += 1
+        return count
+
+    def answered(self, args, words=None):
+        """Give ``args`` with --yes-to-all after the command's words, where it belongs.
+
+        It is added when the module was asked to answer (``yes_to_all``), the
+        arguments do not answer already (-y, --yes-to-all), and the help of
+        the command lists the option.
+        ``words`` is how many of ``args`` name the command; without it, they
+        are found by walking the help (command_words). Nothing is ever written
+        to Spack's input.
+        """
+        args = list(args)
+        if not self.yes_to_all or "-y" in args or YES_TO_ALL in args:
+            return args
+        if words is None:
+            words = self.command_words(args)
+        if not words or not self.help(args[:words])[0]:
+            return args
+        return [*args[:words], YES_TO_ALL, *args[words:]]
 
     def run(self, args, env_path=None, log_file=None, ok=(0,)):
         """Run Spack with ``args`` (in the environment ``env_path``); return its output.
@@ -182,11 +362,22 @@ class Spack:
                 handle.write(err)
         if rc not in ok:
             tail = "\n".join((out + err).splitlines()[-50:])
-            raise SpackError("%s failed (exit %d):\n%s" % (" ".join(command), rc, tail))
+            message = "%s failed (exit %d):\n%s" % (" ".join(command), rc, tail)
+            missing = NO_SUCH_SCOPE.search(out + err)
+            if missing and self.found is not None and behaviour(self.found)["scope_needs_directory"]:
+                message = (
+                    "Spack %s has no configuration scope %r until its directory exists: the user and "
+                    "system scopes are optional, and Spack 1.1 leaves one out while its directory "
+                    "(~/.spack or SPACK_USER_CONFIG_PATH for user, /etc/spack or "
+                    "SPACK_SYSTEM_CONFIG_PATH for system) is missing. Make the directory, then run "
+                    "again.\n%s" % (".".join(str(part) for part in self.found), missing.group(1), message)
+                )
+            raise SpackError(message)
         return out
 
     def version(self):
-        return parse_version(self.run(["--version"]))
+        self.found = parse_version(self.run(["--version"]))
+        return self.found
 
     def require_version(self):
         found = self.version()
@@ -208,8 +399,7 @@ class Spack:
 
     def modules_config(self, env_path):
         """Give the environment's ``modules`` configuration, every scope merged."""
-        text = self.run(["config", "get", "--json", "modules"], env_path=env_path)
-        return (json.loads(text) if text.strip() else {}).get("modules") or {}
+        return self.config_section("modules", env_path=env_path)
 
     def module_roots(self, env_path, systems, config=None):
         """Give the module root of each module system, as the environment configures it."""
@@ -429,21 +619,25 @@ class Configuration:
 
     def get(self, section, merged_scopes=False):
         """Give one section: of this scope, or with every scope merged."""
-        args = ["config", *([] if merged_scopes else scope_args(self.scope)), "get", "--json", section]
         try:
-            text = self.spack.run(args)
+            return self.spack.config_section(section, scope=None if merged_scopes else self.scope)
         except SpackError as error:
             # A scope whose directory has not been made yet, such as the user
             # scope on a fresh machine, cannot be read; it holds nothing.
-            # Writing to it makes it. (Spack v1.2.0's wording; a scope that
-            # is not one at all is refused differently, and still fails.)
-            if "must refer to an existing scope" in str(error):
+            # Writing to it makes it. Spack 1.2 says it "must refer to an
+            # existing scope"; 1.1 that the scope is an "invalid choice", not
+            # naming it among the scopes it lists. Spack 1.0 reads it as empty.
+            if any(
+                (words % (self.scope,) if "%r" in words else words) in str(error) for words in MISSING_SCOPE
+            ):
                 return {}
             raise
-        return (json.loads(text) if text.strip() else {}).get(section) or {}
 
     def remove(self, path):
-        self.spack.run(["config", *scope_args(self.scope), "remove", path_text(path)])
+        # "config" takes --scope before its subcommand, so its own help decides (words=1).
+        self.spack.run(
+            self.spack.answered(["config", *scope_args(self.scope), "remove", path_text(path)], words=1)
+        )
 
     def add(self, section, data):
         """Add ``data`` to a section, through a file: one section per file is what Spack takes."""
@@ -453,6 +647,8 @@ class Configuration:
         try:
             with os.fdopen(handle, "w") as stream:
                 json.dump({section: data}, stream)
-            self.spack.run(["config", *scope_args(self.scope), "add", "-f", name])
+            self.spack.run(
+                self.spack.answered(["config", *scope_args(self.scope), "add", "-f", name], words=1)
+            )
         finally:
             os.unlink(name)

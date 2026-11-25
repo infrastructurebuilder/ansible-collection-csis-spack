@@ -58,8 +58,25 @@ options:
       - The Spack executable, as a path or a name looked up on C(PATH).
     type: str
     default: spack
+  yes_to_all:
+    description:
+      - Answer "yes" to every confirmation Spack asks of a command this module
+        runs to change something, by giving that command C(--yes-to-all) where
+        the installed Spack's help for it lists the option. The help is read
+        only when this is true, once for each command.
+      - That includes confirmations before removing or overwriting something.
+        Without it, such a confirmation fails the task, since Ansible gives
+        Spack no terminal to answer from.
+      - A command that already has C(-y) or C(--yes-to-all) is left as it is.
+    type: bool
+    default: false
+    version_added: 0.0.3
 notes:
   - Supports check mode.
+  - On Spack 1.1, a configuration scope whose directory does not exist yet
+    (the user scope, C(~/.spack), or the system scope, C(/etc/spack)) cannot
+    be written to; Spack 1.1 leaves it out. The module fails and says so;
+    make the directory first. Spack 1.0 and 1.2 make it on the first write.
 """
 
 EXAMPLES = r"""
@@ -174,6 +191,7 @@ def main():
             state=dict(type="str", choices=["present", "absent"], default="present"),
             mode=dict(type="str", choices=["merge", "replace"], default="merge"),
             spack=dict(type="str", default="spack"),
+            yes_to_all=dict(type="bool", default=False),
         ),
         supports_check_mode=True,
     )
@@ -185,7 +203,7 @@ def main():
         if not isinstance(wanted, dict):
             module.fail_json(msg="the section %s must be a mapping, not %r" % (section, wanted), **result)
     try:
-        spack = Spack(module, params["spack"])
+        spack = Spack(module, params["spack"], yes_to_all=params["yes_to_all"])
         result["spack_version"] = ".".join(str(part) for part in spack.require_version())
         config = Configuration(spack, params["scope"])
         before, after = {}, {}

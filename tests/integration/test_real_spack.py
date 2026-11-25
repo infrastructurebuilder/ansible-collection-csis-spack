@@ -1,4 +1,4 @@
-"""Both modules against the real Spack v1.2.0, on the local machine (just full-test).
+"""The modules against the real Spack 1.0.0, 1.1.0 and 1.2.0, on the local machine (just full-test).
 
 Spack is cloned once into .tmp/spack, and keeps its user configuration and
 caches in .tmp/ too, so nothing of the local machine's own Spack is read or
@@ -8,21 +8,22 @@ first concretization bootstraps Spack's solver and takes a few minutes.
 
 from __future__ import annotations
 
+import os
+import subprocess
 from pathlib import Path
 
 import pytest
-from real_spack import real_spack_env
+from ansible_collections.infrastructurebuilder.csis_spack.plugins.module_utils.spack import Spack
+from real_spack import keyring, local_scopes, on_path, publish_keys, signing_key, spack_env, spack_version
 from runner import run_module
 
 pytestmark = pytest.mark.integration
+__all__ = ["spack_env", "spack_version"]  # fixtures, each run once per version
 
 
-@pytest.fixture(scope="module")
-def spack_env() -> dict[str, str]:
-    return real_spack_env()
-
-
-def test_both_modules_against_the_real_spack(tmp_path: Path, spack_env: dict[str, str]) -> None:
+def test_both_modules_against_the_real_spack(
+    tmp_path: Path, spack_env: dict[str, str], spack_version: str
+) -> None:
     env = tmp_path / "env"
     env.mkdir()
     modules = tmp_path / "modules"
@@ -63,7 +64,7 @@ def test_both_modules_against_the_real_spack(tmp_path: Path, spack_env: dict[str
     assert before["concretized"] is True
     assert "zlib" in [item["spec"] for item in before["installed"]]
     assert not (env / "spack.lock").exists(), "check mode wrote the environment's lock"
-    assert before["spack_version"] == "1.2.0"
+    assert before["spack_version"] == spack_version.lstrip("v")
 
     first = run("spack_env", build)
     assert first["changed"] is True
@@ -131,3 +132,92 @@ def test_both_modules_against_the_real_spack(tmp_path: Path, spack_env: dict[str
     forced = run("spack_buildcache_push", push | {"force": True})
     assert {item["hash"] for item in forced["pushed"]} == {item["hash"] for item in pushed["pushed"]}
     assert "force=true overwrites every package" in forced["_stderr"]
+
+
+def test_the_keys_a_mirror_publishes_are_trusted_with_no_prompt(
+    tmp_path: Path, spack_env: dict[str, str], spack_version: str
+) -> None:
+    """spack_gpg_key from_mirrors against a mirror that publishes keys (spec 003, FR-003).
+
+    Spack 1.2 asks "Trust key: <fingerprint> [y/N]" for every key a mirror
+    publishes, trusted already or not; under Ansible the question reads end of
+    file, and 0.0.2's module failed here with exit 3.
+    """
+    env = tmp_path / "env"
+    env.mkdir()
+    (env / "spack.yaml").write_text(
+        "spack:\n  specs: [zlib]\n  view: false\n  config:\n"
+        f"    install_tree:\n      root: {tmp_path / 'store'}\n"
+    )
+    mirror = tmp_path / "mirror"
+
+    def run(name: str, args: dict, env: dict[str, str]) -> dict:
+        result = run_module(name, args, env=env)
+        assert result["failed"] is False, result.get("msg")
+        return result
+
+    run("spack_env", {"path": str(env), "install_args": ["--fake"]}, spack_env)
+    with keyring() as signing, keyring() as trusting:
+        signer = spack_env | {"SPACK_GNUPGHOME": signing}
+        # The mirror is read from a user scope of the test's own: with
+        # SPACK_DISABLE_LOCAL_CONFIG, "mirror add" would write to Spack's own
+        # site scope in .tmp/spack (research.md, R4).
+        local = {name: value for name, value in spack_env.items() if name != "SPACK_DISABLE_LOCAL_CONFIG"}
+        truster = local | {
+            **local_scopes(tmp_path, spack_version),
+            "SPACK_GNUPGHOME": trusting,
+        }
+        first_key = signing_key(spack_env, signing, "Key A")
+        run("spack_buildcache_push", {"env": str(env), "mirror": str(mirror), "key": first_key}, signer)
+        publish_keys(spack_env, signing, mirror)
+        added = {"name": "signed", "url": f"file://{mirror}", "type": ["binary"], "scope": "user"}
+        run("spack_mirror", added, truster)
+
+        first = run("spack_gpg_key", {"from_mirrors": True}, truster)
+        assert (first["changed"], first["trusted"]) == (True, [first_key])
+        # Spack asks again for a key it trusts; answered, nothing changes.
+        again = run("spack_gpg_key", {"from_mirrors": True}, truster)
+        assert (again["changed"], again["trusted"]) == (False, [])
+
+        # A mirror that publishes two keys: the one not yet trusted is the change.
+        second_key = signing_key(spack_env, signing, "Key B")
+        push = {"env": str(env), "mirror": str(mirror), "key": second_key, "force": True}
+        run("spack_buildcache_push", push, signer)
+        publish_keys(spack_env, signing, mirror)
+        both = run("spack_gpg_key", {"from_mirrors": True}, truster)
+        assert (both["changed"], both["trusted"]) == (True, [second_key])
+        assert run("spack_gpg_key", {"from_mirrors": True}, truster)["changed"] is False
+
+
+class RealModule:
+    """What Spack needs of an AnsibleModule, running the real spack of an environment."""
+
+    def __init__(self, env: dict[str, str]) -> None:
+        self.env = env
+
+    def run_command(self, command: list[str]) -> tuple[int, str, str]:
+        done = subprocess.run(command, env=os.environ | self.env, capture_output=True, text=True, check=False)
+        return done.returncode, done.stdout, done.stderr
+
+
+def test_the_yes_to_all_help_check_reads_the_real_spacks_help(spack_env: dict[str, str]) -> None:
+    """yes_to_all's help check against the real Spack (spec 003, FR-007): the same on 1.0, 1.1 and 1.2."""
+    spack = Spack(RealModule(spack_env), on_path(spack_env), yes_to_all=True)
+    assert spack.answered(["install", "--fake"], words=1) == ["install", "--yes-to-all", "--fake"]
+    assert spack.answered(["mirror", "add", "n", "file:///nowhere"], words=2) == [
+        "mirror",
+        "add",
+        "n",
+        "file:///nowhere",
+    ]
+    # Walked to: module, then tcl, then refresh, whose help lists it.
+    assert spack.answered(["module", "tcl", "refresh", "--delete-tree"]) == [
+        "module",
+        "tcl",
+        "refresh",
+        "--yes-to-all",
+        "--delete-tree",
+    ]
+    # --scope before the subcommand: only config's own help is read, which does not list it.
+    command = ["config", "--scope", "user", "add", "config:build_jobs:2"]
+    assert spack.answered(command) == command

@@ -3,7 +3,8 @@
 It answers the commands the modules run, the way Spack v1.2.0 answers them
 (see tests/integration, which runs the same modules against the real Spack),
 from a JSON state file named by FAKE_SPACK_STATE, and records every call in
-that file.
+that file. ``<command> --help`` prints the text the real Spack printed for
+it, kept in fake_spack_help.json.
 
 State keys:
   version          what ``spack --version`` prints
@@ -18,6 +19,8 @@ State keys:
   push_format      "other": ``buildcache push`` words its messages as no Spack does today
   overwritten      hashes that a push with --force replaced on the mirror, in order
   fail             {"<subcommand>": true}: that subcommand fails
+  version          also the version the stand-in plays: "1.0..." and "1.1..." make the
+                   commands that differ behave as in those versions (fake_spack_setup.py)
   (and those of fake_spack_setup.py, for configuration, mirrors, keys and detection)
   calls            every argument list the fake was run with
 """
@@ -26,6 +29,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import shutil
 import sys
 from datetime import datetime
@@ -63,10 +67,49 @@ def fail(state: dict[str, Any], what: str) -> None:
         sys.exit(1)
 
 
+HELP = json.loads((Path(__file__).resolve().parent / "fake_spack_help.json").read_text())
+
+
+def help_text(state: dict[str, Any], words: list[str]) -> int:
+    """Print ``spack <words> --help`` as the real Spack printed it (fake_spack_help.json)."""
+    text = HELP["v1.2.0"].get(" ".join(words))
+    if text is None:
+        print(
+            f"==> Error: {words[0] if words else ''} is not a recognized Spack command or extension "
+            "command; check with `spack commands`.",
+            file=sys.stderr,
+        )
+        return 1
+    print(text, end="")
+    return 0
+
+
+def config_get_for(code: str) -> list[str]:
+    """The "config get --json" that the module's "spack python -c" stands for (spack.py's CONFIG_*)."""
+    scoped = re.search(r"get_config\('([\w-]+)', scope='([^']+)'\)", code)
+    if scoped:
+        return ["config", "--scope", scoped.group(2), "get", "--json", scoped.group(1)]
+    merged = re.search(r"spack\.config\.get\('([\w-]+)'\)", code)
+    assert merged, f"the stand-in does not know this Python: {code!r}"
+    return ["config", "get", "--json", merged.group(1)]
+
+
 def main(argv: list[str]) -> int:
     path, state = load()
     state.setdefault("calls", []).append(argv)
     save(path, state)
+    if argv[-1:] == ["--help"]:
+        return help_text(state, argv[:-1])
+    if argv[:1] == ["-e"]:
+        env_args, rest = argv[:2], argv[2:]
+    else:
+        env_args, rest = [], argv
+    if rest[:2] == ["python", "-c"]:
+        # Spack 1.0's way to configuration as JSON, read as the "config get --json" it stands for.
+        argv = env_args + config_get_for(rest[2])
+    elif "--json" in rest and rest[:1] == ["config"] and fake_spack_setup.playing(state) < (1, 1):
+        print("==> Error: unrecognized arguments: --json", file=sys.stderr)
+        return 1
     env = None
     if argv[:1] == ["-e"]:
         env, argv = argv[1], argv[2:]
@@ -82,6 +125,9 @@ def main(argv: list[str]) -> int:
         print(state.get("version", "1.2.0 (63962ed90680d339004305075da272ae93c04a41)"))
     elif argv == ["location", "-r"]:
         print(state["root"])
+    elif argv[:1] == ["gc"]:
+        # Spack asks before removing anything, unless given --yes-to-all.
+        print("==> There are no unused specs. Spack's store is clean.")
     elif argv[:1] == ["concretize"] and env:
         fail(state, "concretize")
         (Path(env) / "spack.lock").write_text(json.dumps(state["lock"], indent=1, sort_keys=True))

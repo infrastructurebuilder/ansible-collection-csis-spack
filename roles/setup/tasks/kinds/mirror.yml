@@ -11,5 +11,6 @@
     type: "{{ spack_setup_step.type | default(omit) }}"
     signed: "{{ spack_setup_step.signed | default(omit) }}"
     state: "{{ spack_setup_step.state | default(omit) }}"
+    yes_to_all: "{{ spack_setup_step.yes_to_all | default(spack_setup_yes_to_all) }}"
   environment: "{{ spack_setup_step_environment }}"
   register: spack_setup_done

@@ -43,6 +43,19 @@ options:
       - The Spack executable, as a path or a name looked up on C(PATH).
     type: str
     default: spack
+  yes_to_all:
+    description:
+      - Answer "yes" to every confirmation Spack asks of a command this module
+        runs to change something, by giving that command C(--yes-to-all) where
+        the installed Spack's help for it lists the option. The help is read
+        only when this is true, once for each command.
+      - That includes confirmations before removing or overwriting something.
+        Without it, such a confirmation fails the task, since Ansible gives
+        Spack no terminal to answer from.
+      - A command that already has C(-y) or C(--yes-to-all) is left as it is.
+    type: bool
+    default: false
+    version_added: 0.0.3
   key:
     description:
       - The GPG key to sign with, by name, email or fingerprint. Without it
@@ -221,6 +234,7 @@ def main():
             env=dict(type="path", required=True),
             mirror=dict(type="str", required=True),
             spack=dict(type="str", default="spack"),
+            yes_to_all=dict(type="bool", default=False),
             key=dict(type="str", no_log=False),
             unsigned=dict(type="bool", default=False),
             update_index=dict(type="bool", default=False),
@@ -237,7 +251,7 @@ def main():
     if not os.path.isfile(os.path.join(path, "spack.yaml")):
         module.fail_json(msg="%s is not a Spack environment: it has no spack.yaml" % path, **result)
     try:
-        spack = Spack(module, params["spack"])
+        spack = Spack(module, params["spack"], yes_to_all=params["yes_to_all"])
         result["spack_version"] = ".".join(str(part) for part in spack.require_version())
         url = result["mirror_url"] = mirror_url(params["mirror"], spack.mirrors(path))
         selected = selection(spack, params)
@@ -260,7 +274,8 @@ def main():
             if force == "once" and overwrite:
                 # Exactly these, by hash, and not their dependencies again.
                 chosen = ["/" + digest for digest in sorted(overwrite)]
-                spack.run([*push, "--only", "package", "--force", params["mirror"], *chosen], env_path=path)
+                again = [*push, "--only", "package", "--force", params["mirror"], *chosen]
+                spack.run(spack.answered(again, words=2), env_path=path)
             args = list(push)
             if params["update_index"]:
                 args.append("--update-index")
@@ -272,7 +287,7 @@ def main():
                     "run; use force=once to overwrite each package one time"
                 )
                 args.append("--force")
-            spack.run([*args, params["mirror"]], env_path=path)
+            spack.run(spack.answered([*args, params["mirror"]], words=2), env_path=path)
             pushed = (missing - lacking(spack, path, url, selected)) | overwrite
             if force == "once" and overwrite:
                 remember_overwritten(path, url, done_before | overwrite)
