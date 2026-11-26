@@ -168,3 +168,7 @@ T011 tests/integration/test_real_setup.py
   source), each committed when its tests pass.
 - **Done** when T031 passes and T033 is committed; merging into `develop`
   waits for the operator's word, then `/speckit-converge`.
+
+## Phase 7: Convergence
+
+- [ ] T034 Justify the `just unit` target added to `Justfile` during implementation (the unit tests alone, or those named, for seeing one fail or pass without the four-minute `just test`): name it in `specs/004-install-spack/plan.md`'s Structure Decision beside `integration`'s arguments, and list both (`just unit -k <name>`, `just integration -k <name>`) in `README.md`'s "Working on it"; or remove it from `Justfile` per plan: Structure Decision (unrequested)
