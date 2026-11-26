@@ -263,3 +263,16 @@ def test_a_spack_setup_executable_that_disagrees_with_the_spack_step_is_refused(
     assert str(path / "bin" / "spack") in played.output
     assert played.results == []
     assert not path.exists()
+
+
+def test_a_spack_step_at_another_version_stops_the_role_before_the_next_step(
+    spack: Spack, tmp_path: Path
+) -> None:
+    step, _, _ = installed_by_the_role(spack, tmp_path)
+    assert spack.setup([step, STEPS[0]]).rc == 0
+    spack.update(calls=[], scopes={})
+    played = spack.setup([step | {"version": "v1.0.0"}, STEPS[0]])
+    assert played.rc != 0
+    assert "v1.0.0 was asked for" in played.output
+    assert spack.calls("config") == []
+    assert spack.scope("site", "config") == {}

@@ -246,8 +246,15 @@ def at_version(git, real, version):
 
 def edited_files(git, real):
     """Spack's own files that differ from the version checked out."""
-    out = git.must("-C", real, "status", "--porcelain", "--untracked-files=no")
-    return [line[3:] for line in out.splitlines() if line.strip()]
+    # Each line is two status letters, a space and the name; the letters may
+    # begin with a space, so the output is read as git printed it.
+    rc, out, err = git.module.run_command(
+        [git.executable, "-C", real, "status", "--porcelain", "--untracked-files=no"],
+        environ_update=GIT_ENVIRONMENT,
+    )
+    if rc != 0:
+        raise CheckoutError("git status failed at %s: %s" % (real, err.strip()))
+    return [line[3:] for line in out.splitlines() if len(line) > 3]
 
 
 def clone(git, source, version, target):

@@ -358,3 +358,101 @@ def test_git_is_run_as_an_argument_list_never_through_a_shell(
     assert recorder.calls
     shells = {"sh", "bash", "zsh", "dash", "/bin/sh", "/bin/bash", "/bin/zsh"}
     assert not [call for call in recorder.calls if call["parent"] in shells], recorder.calls
+
+
+# User Story 2: a Spack already there is respected, and anything else is refused untouched.
+
+
+def listing(path: Path) -> list[str]:
+    return sorted(str(entry.relative_to(path)) for entry in path.rglob("*") if ".git" not in entry.parts)
+
+
+@pytest.mark.parametrize("version", ["v1.0.0", "releases/v1.2"])
+def test_a_spack_cloned_by_hand_at_the_version_is_left_alone(
+    spack: Spack, tmp_path: Path, source: tuple[str, dict[str, str]], version: str
+) -> None:
+    path = tmp_path / "spack"
+    git("clone", "--quiet", "--depth", "1", "--branch", version, source[0], str(path))
+    before = head(path)
+    result = checkout(spack, version=version, path=str(path), source=source[0])
+    assert result["failed"] is False, result.get("msg")
+    assert (result["changed"], result["found"], result["edited"]) == (False, "spack", [])
+    assert head(path) == before
+
+
+@pytest.mark.parametrize("check", [False, True])
+def test_a_spack_at_another_version_fails_and_is_left_as_it_was(
+    spack: Spack, tmp_path: Path, source: tuple[str, dict[str, str]], check: bool
+) -> None:
+    path = tmp_path / "spack"
+    assert checkout(spack, version="v1.2.0", path=str(path), source=source[0])["changed"] is True
+    before = (head(path), git("status", "--porcelain", cwd=path), listing(path))
+    result = checkout(spack, check=check, version="v1.0.0", path=str(path), source=source[0])
+    assert result["failed"] is True
+    assert "tag v1.2.0" in result["msg"]
+    assert "1.2.0 (" in result["msg"]
+    assert "v1.0.0 was asked for" in result["msg"]
+    assert "Nothing was changed" in result["msg"]
+    assert (head(path), git("status", "--porcelain", cwd=path), listing(path)) == before
+
+
+def not_a_spack(where: Path, case: str) -> Path:
+    """Something at a path that is not a Spack, made as ``case`` says."""
+    if case == "a file":
+        path = where / "spack"
+        path.write_text("not a directory\n")
+        return path
+    if case == "a directory that is not a git repository":
+        path = where / "spack"
+        path.mkdir()
+        (path / "notes.txt").write_text("a site's own files\n")
+        return path
+    if case == "a git repository with no bin/spack":
+        path = where / "spack"
+        path.mkdir()
+        git("init", "--quiet", str(path))
+        (path / "notes.txt").write_text("a repository, but not Spack\n")
+        return path
+    # Inside another repository. (An empty directory there is an empty directory, FR-004.)
+    outer = where / "outer"
+    outer.mkdir()
+    git("init", "--quiet", str(outer))
+    path = outer / "sub"
+    path.mkdir()
+    (path / "notes.txt").write_text("inside another repository\n")
+    return path
+
+
+CASES = [
+    "a file",
+    "a directory that is not a git repository",
+    "a git repository with no bin/spack",
+    "a directory inside the git repository at",
+]
+
+
+@pytest.mark.parametrize("check", [False, True])
+@pytest.mark.parametrize("case", CASES)
+def test_what_is_not_a_spack_fails_and_is_left_as_it_was(
+    spack: Spack, tmp_path: Path, source: tuple[str, dict[str, str]], case: str, check: bool
+) -> None:
+    path = not_a_spack(tmp_path, case)
+    before = path.read_text() if path.is_file() else listing(path)
+    result = checkout(spack, check=check, version="v1.2.0", path=str(path), source=source[0])
+    assert result["failed"] is True
+    assert case in result["msg"]
+    assert "it is not a Spack. Nothing was changed" in result["msg"]
+    assert (path.read_text() if path.is_file() else listing(path)) == before
+
+
+def test_a_spack_at_the_version_with_edited_files_is_left_alone_with_a_warning(
+    spack: Spack, tmp_path: Path, source: tuple[str, dict[str, str]]
+) -> None:
+    path = tmp_path / "spack"
+    assert checkout(spack, version="v1.2.0", path=str(path), source=source[0])["changed"] is True
+    (path / "README.md").write_text("a site's own change\n")
+    result = checkout(spack, version="v1.2.0", path=str(path), source=source[0])
+    assert result["failed"] is False, result.get("msg")
+    assert (result["changed"], result["edited"]) == (False, ["README.md"])
+    assert "README.md" in result["_stderr"]
+    assert (path / "README.md").read_text() == "a site's own change\n"

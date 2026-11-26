@@ -252,3 +252,22 @@ def test_checkout_installs_the_real_spack_from_its_clone_then_leaves_it_alone(
     again = run_module("spack_checkout", args, env=spack_env)
     assert again["failed"] is False, again.get("msg")
     assert (again["changed"], again["found"]) == (False, "spack")
+
+
+def test_checkout_leaves_the_real_clone_alone_at_its_version_and_refuses_another(
+    spack_env: dict[str, str], spack_version: str
+) -> None:
+    """The local clone of each version, as a Spack a person installed: named with its tag, then another."""
+    clone = spack_root(spack_version)
+    same = run_module("spack_checkout", {"version": spack_version, "path": str(clone)}, env=spack_env)
+    assert same["failed"] is False, same.get("msg")
+    assert (same["changed"], same["found"], same["edited"]) == (False, "spack", [])
+    status = ["git", "-C", str(clone), "status", "--porcelain"]
+    assert subprocess.run(status, capture_output=True, text=True, check=True).stdout == ""
+
+    other = "v1.0.0" if spack_version != "v1.0.0" else "v1.2.0"
+    refused = run_module("spack_checkout", {"version": other, "path": str(clone)}, env=spack_env)
+    assert refused["failed"] is True
+    assert f"tag {spack_version}" in refused["msg"]
+    assert f"{other} was asked for" in refused["msg"]
+    assert subprocess.run(status, capture_output=True, text=True, check=True).stdout == ""
