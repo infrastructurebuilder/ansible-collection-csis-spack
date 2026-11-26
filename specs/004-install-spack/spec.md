@@ -317,7 +317,7 @@ it at the version named.
   step: a list with an install step and no `spack_setup_executable` runs
   every later step with the Spack it installed.
 - **SC-005**: Every case of FR-004 to FR-010 is held by a test that fails if
-  the step does otherwise, and the install of each version the collection is
+  the step does otherwise, both in a real run and in check mode, and the install of each version the collection is
   tested against (1.0.0, 1.1.0, 1.2.0) is proved against the real Spack.
   The tests need no network: installing from Spack's public repository (US3,
   scenario 2) is proved by research R2's fetch from GitHub, and held by a
