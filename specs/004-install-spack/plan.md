@@ -254,4 +254,11 @@ README.md, CHANGELOG.md
 sits beside the others; no new directory is added. `plugins/filter/setup_executable.yml`
 documents the new filter, as `setup_label.yml` does its. In the `Justfile`,
 `integration` takes pytest's arguments, so that one new integration test can
-be seen to fail without the whole run; `full-test` calls it with none.
+be seen to fail without the whole run; `full-test` calls it with none. A new
+target, `unit`, does the same for the unit tests (`just unit -k checkout`),
+so that one can be seen to fail or pass without the four minutes of
+`just test`; it is not a substitute for `just test`, having no lint, no
+type-check and no build. Both pass their arguments through as given
+(`[positional-arguments]`), so that `-k "a or b"` reaches pytest whole.
+(`unit` was added while implementing and recorded here after
+`/speckit-converge`, T034.)

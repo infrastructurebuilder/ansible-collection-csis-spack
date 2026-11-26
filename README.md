@@ -184,6 +184,8 @@ just build       # dist/infrastructurebuilder-csis_spack-<version>.tar.gz
 just test        # ruff, pyright, the unit tests against a stand-in spack (a few minutes), and a build that installs
 just full-test   # the same, then the modules and the role against the real Spack 1.0.0, 1.1.0 and 1.2.0, then ansible-test sanity
 just integration # only the modules and the role against the real Spacks: for seeing a new integration test fail first
+just unit        # only the unit tests, with no lint, type-check or build
+# Both take pytest's arguments, to run some tests: just unit -k checkout, just integration -k checkout
 just format      # rewrite the code in ruff's format, which lint checks
 just import-check  # the tarball through galaxy-importer, the checks Galaxy runs on an upload
 just release     # full-test and the tarball; then tag it with the bare version, as 0.0.1
