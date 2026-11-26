@@ -43,7 +43,8 @@ class Git:
             "parent = subprocess.run(['ps', '-o', 'comm=', '-p', str(os.getppid())],\n"
             "                        capture_output=True, text=True).stdout.strip()\n"
             f"with open({str(self.log)!r}, 'a') as log:\n"
-            "    log.write(json.dumps({'args': sys.argv[1:], 'parent': parent}) + '\\n')\n"
+            "    log.write(json.dumps({'args': sys.argv[1:], 'parent': parent,\n"
+            "                          'proxy': os.environ.get('HTTPS_PROXY')}) + '\\n')\n"
             f"{answer}"
             f"os.execv({REAL_GIT!r}, [{REAL_GIT!r}] + sys.argv[1:])\n"
         )
@@ -456,3 +457,45 @@ def test_a_spack_at_the_version_with_edited_files_is_left_alone_with_a_warning(
     assert (result["changed"], result["edited"]) == (False, ["README.md"])
     assert "README.md" in result["_stderr"]
     assert (path / "README.md").read_text() == "a site's own change\n"
+
+
+# User Story 3: the source a site names is the one used; with none, Spack's own repository.
+
+
+@pytest.mark.parametrize("version", ["v1.2.0", "releases/v1.2", "full hash"])
+def test_spack_is_fetched_from_the_source_named(
+    spack: Spack, tmp_path: Path, source: tuple[str, dict[str, str]], version: str
+) -> None:
+    url, commits = source
+    named = commits["v1.0.0"] if version == "full hash" else version
+    path = tmp_path / "spack"
+    result = checkout(spack, version=named, path=str(path), source=url)
+    assert result["failed"] is False, result.get("msg")
+    assert result["source"] == url
+    assert git("remote", "get-url", "origin", cwd=path) == url
+
+
+def test_with_no_source_named_spacks_own_repository_is_the_one_used(spack: Spack, tmp_path: Path) -> None:
+    # Check mode, so that nothing is fetched: the tests have no network (research.md R2 is the real fetch).
+    result = checkout(spack, check=True, version="v1.2.0", path=str(tmp_path / "spack"))
+    assert result["failed"] is False, result.get("msg")
+    assert result["source"] == "https://github.com/spack/spack.git"
+    assert not (tmp_path / "spack").exists()
+
+
+def test_the_steps_environment_reaches_git(
+    spack: Spack, tmp_path: Path, source: tuple[str, dict[str, str]]
+) -> None:
+    recorder = Git(tmp_path)
+    environment = recorder.env(spack) | {"HTTPS_PROXY": "http://proxy.example.org:3128"}
+    step = {
+        "kind": "spack",
+        "version": "v1.2.0",
+        "path": str(tmp_path / "spack"),
+        "source": source[0],
+        "environment": environment,
+    }
+    played = spack.setup([step])
+    assert played.rc == 0, played.output
+    assert recorder.calls
+    assert {call["proxy"] for call in recorder.calls} == {"http://proxy.example.org:3128"}

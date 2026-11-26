@@ -118,8 +118,8 @@ Spack's public repository (FR-003).
 
 **Independent Test**: an install naming a local source fetches only from it.
 
-- [ ] T024 [P] [US3] In `tests/unit/test_spack_checkout.py`: with `source` a local repository, `git -C <path> remote get-url origin` is that source, for a tag, a branch and a full hash; with `source` left out, in check mode (so nothing is fetched), the result names `https://github.com/spack/spack.git` as the source it would use; with `HTTPS_PROXY` given through the role step's `environment`, the recording `git` wrapper (T008) saw it in its environment
-- [ ] T025 [US3] Run `just test`; if T024 fails, return the source in the module's result (`source`, in `RETURN`) and make the full-hash install add `origin` (contracts/interface.md) in `plugins/modules/spack_checkout.py`, until it passes. Commit
+- [X] T024 [P] [US3] In `tests/unit/test_spack_checkout.py`: with `source` a local repository, `git -C <path> remote get-url origin` is that source, for a tag, a branch and a full hash; with `source` left out, in check mode (so nothing is fetched), the result names `https://github.com/spack/spack.git` as the source it would use; with `HTTPS_PROXY` given through the role step's `environment`, the recording `git` wrapper (T008) saw it in its environment
+- [X] T025 [US3] Run `just test`; if T024 fails, return the source in the module's result (`source`, in `RETURN`) and make the full-hash install add `origin` (contracts/interface.md) in `plugins/modules/spack_checkout.py`, until it passes. Commit
 
 **Checkpoint**: all three stories work.
 
