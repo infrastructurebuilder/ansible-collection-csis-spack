@@ -16,8 +16,8 @@ of the examples, kept apart from the code.
 
 ## Status
 
-0.0.2 (2026-11-19): eight modules, a role and a filter, tested against a
-stand-in for Spack and against the real Spack v1.2.0. It is on
+0.0.3 (2026-11-25): eight modules, a role and a filter, tested against a
+stand-in for Spack and against the real Spack 1.0.0, 1.1.0 and 1.2.0. It is on
 [Ansible Galaxy](https://galaxy.ansible.com/ui/repo/published/infrastructurebuilder/csis_spack/)
 as `infrastructurebuilder.csis_spack`; the first release there was 0.0.1
 (2026-11-18).
@@ -41,7 +41,7 @@ From this repository at a release tag:
 collections:
   - name: https://github.com/infrastructurebuilder/ansible-collection-csis-spack.git
     type: git
-    version: "0.0.2"
+    version: "0.0.3"
 ```
 
 Then `ansible-galaxy collection install -r requirements.yml`.

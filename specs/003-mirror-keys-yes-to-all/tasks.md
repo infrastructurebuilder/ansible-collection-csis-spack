@@ -141,7 +141,7 @@ what 0.0.2 ran, apart from `spack_gpg_key`'s two trusts.
 - [X] T035 Run `just test` (`Justfile`)
 - [X] T036 Run `just full-test` (`Justfile`)
 - [X] T037 Tick this file's tasks, and set the Status line of `specs/003-mirror-keys-yes-to-all/spec.md` to done, with the date. Commit
-- [ ] T038 **Only on the operator's word, asked first:** finish the feature with `git flow feature finish mirror-keys-yes-to-all --squash --keep` (push only when told), check `git diff develop feature/mirror-keys-yes-to-all` is empty; then, on a separate word, release 0.0.3 as the collection's release procedure says. Say before any tag is pushed that pushing it publishes to Ansible Galaxy (Principle V)
+- [X] T038 **Only on the operator's word, asked first:** finish the feature with `git flow feature finish mirror-keys-yes-to-all --squash --keep` (push only when told), check `git diff develop feature/mirror-keys-yes-to-all` is empty; then, on a separate word, release 0.0.3 as the collection's release procedure says. Say before any tag is pushed that pushing it publishes to Ansible Galaxy (Principle V)
 
 ---
 
