@@ -15,11 +15,11 @@ converge check** is the date of that run.
 
 ## In the order they were built
 
-| # | Spec | Converged | What | Branch | Tasks | Released in | Last converge check |
-| ---: | --- | --- | --- | --- | ---: | --- | --- |
-| 1 | [002](002-setup-executable-rename/spec.md) | ❌ | The `setup` role's Spack executable is named `spack_setup_executable`; the old `spack_setup_spack` still works. **Complete**, 2026-11-17 | `feature/setup-executable-rename` (until the history reset of 2026-11-18) | 14 | 0.0.1 | never |
-| 2 | [001](001-galaxy-publish/spec.md) | ❌ | The collection is published to Ansible Galaxy, from its tag, by `just publish` or the publish workflow. **Complete**, 2026-11-19 | `feature/galaxy-publish` (until the history reset of 2026-11-18) | 22 | 0.0.1, 0.0.2 | never |
-| 3 | [003](003-mirror-keys-yes-to-all/spec.md) | ✅ | `spack_gpg_key`'s `from_mirrors` answers Spack 1.2's trust question; the collection works on Spack 1.0, 1.1 and 1.2 (a version table, tests against all three); `yes_to_all` on every module and the `setup` role. **Complete and released**, 2026-11-25 | `feature/mirror-keys-yes-to-all` | 45 | 0.0.3 | 2026-11-25 |
+| # | Spec | Converged | Serves | Ends in | State | Branch | Tasks | Released in | Last converge check |
+| ---: | --- | --- | --- | --- | --- | --- | ---: | --- | --- |
+| 1 | [002 The setup role's Spack executable is named `spack_setup_executable`](002-setup-executable-rename/spec.md) | ❌ | whoever reads or writes a site's configuration for the `setup` role | a playbook written for 0.3.1 running unchanged, and each of the three cases (new name, old name, both) held by a test | complete 2026-11-17, released in 0.0.1 ([tasks](002-setup-executable-rename/tasks.md)) | `feature/setup-executable-rename` (until the history reset of 2026-11-18) | 14 | 0.0.1 | never |
+| 2 | [001 The collection is published to Ansible Galaxy](001-galaxy-publish/spec.md) | ❌ | someone writing a playbook; the operator who releases; the Cloud Sandbox | one command installing the collection by name on a clean machine, and a release reaching Galaxy by one action of the operator's | complete 2026-11-19: 0.0.1 published, and the Cloud Sandbox installs it from Galaxy; 0.0.2 proved the last two checks ([tasks](001-galaxy-publish/tasks.md)) | `feature/galaxy-publish` (until the history reset of 2026-11-18) | 22 | 0.0.1, 0.0.2 | never |
+| 3 | [003 `spack_gpg_key` trusts the mirrors' keys without a prompt](003-mirror-keys-yes-to-all/spec.md) | ✅ | a site whose play trusts its mirrors' keys; a site on Spack 1.0 or 1.1; a site whose Spack commands ask before acting | a `from_mirrors` step finishing with no prompt and reporting no change the second time, and the integration tests passing against the real Spack 1.0.0, 1.1.0 and 1.2.0 | complete 2026-11-25: merged (`058744b`), released in 0.0.3 on Ansible Galaxy, converged; also the version table for Spack 1.0 and 1.1, and `yes_to_all` ([tasks](003-mirror-keys-yes-to-all/tasks.md)) | `feature/mirror-keys-yes-to-all` | 45 | 0.0.3 | 2026-11-25 |
 
 Specs 001 and 002 were finished before `/speckit-converge` was used here;
 running it on them would give them a mark and a date.
