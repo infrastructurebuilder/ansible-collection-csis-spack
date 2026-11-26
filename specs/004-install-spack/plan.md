@@ -135,7 +135,7 @@ named; `spack_version`, what `spack --version` printed; `found`, one of
 - **`plugins/filter/setup_problems.py`**: `KINDS["spack"]`, carried out by
   `spack_checkout`, requires `version` and `path`, and may have `source`
   (and `label` and `environment`, as every step may: an environment can set
-  a proxy or a certificate for `git`). It has no `yes_to_all` and no
+  a proxy or a certificate for `git`; as the first step, only as a mapping). It has no `yes_to_all` and no
   `scope`. New rules, each a problem found before any step runs (FR-008):
   - a `spack` step that is not the first step, or a second one;
   - a `spack` step whose `path` is not absolute;
@@ -235,6 +235,7 @@ specs/004-install-spack/
 ```text
 plugins/modules/spack_checkout.py        # new
 plugins/filter/setup_problems.py         # the kind, its rules, setup_executable, the label
+plugins/filter/setup_executable.yml      # new: the filter's documentation
 roles/setup/
 ├── tasks/main.yml                       # the executable to the check; spack_setup_program
 ├── tasks/step.yml                       # steps not previewed after a check-mode install
@@ -250,5 +251,7 @@ README.md, CHANGELOG.md
 ```
 
 **Structure Decision**: the collection's existing layout. The one new module
-sits beside the others; no new directory is added, and nothing is added to
-the `Justfile`.
+sits beside the others; no new directory is added. `plugins/filter/setup_executable.yml`
+documents the new filter, as `setup_label.yml` does its. In the `Justfile`,
+`integration` takes pytest's arguments, so that one new integration test can
+be seen to fail without the whole run; `full-test` calls it with none.

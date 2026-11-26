@@ -37,6 +37,11 @@ with tasks of its own before the `setup` role.
 - Q: (While planning.) The plan proposes the step's kind `spack`, the module
   `spack_checkout`, the options `version`, `path` and `source`, and
   `version_added: 0.0.4`. Take them, or change any? → A: Take all four.
+- Recorded on the operator's yes to `/speckit-analyze`'s remediations: in
+  check mode on a node with no Spack, the steps after the install step are
+  not previewed (FR-009, research R9); a commit is given by its full hash
+  (FR-002); the install step takes `environment` only as a mapping
+  (FR-008).
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -139,8 +144,8 @@ it at the version named.
   a Spack that does not run.
 - **The version named is older than 1.0**, which the collection does not
   support: the step fails and says so, before later steps run against it.
-- **Two install steps in one list**, or an install step after a step that
-  already ran Spack: refused before any step runs, as the role refuses every
+- **Two install steps in one list**, or an install step that is not the
+  first step: refused before any step runs, as the role refuses every
   malformed list today (FR-008).
 - **The destination's parent does not exist**: it is made, like any path the
   site names for Spack.
@@ -163,8 +168,10 @@ it at the version named.
 - **FR-002**: The step MUST be given the Spack version to install and the
   destination (the directory Spack is installed in). Neither has a default:
   both are a site's choice (principle I). The version is what Spack's
-  project names a release by (for example `v1.2.0`); a branch or a commit
-  MUST be accepted too.
+  project names a release by (for example `v1.2.0`); a branch, or a commit
+  given by its full 40-digit hash, MUST be accepted too. A shorter hash MUST
+  be refused before anything is fetched: git cannot fetch a commit by a
+  short hash without Spack's whole history (research R2).
 - **FR-003**: The step MAY be given the source to install from: the address
   of a git repository holding Spack, such as a site's own mirror of Spack's.
   Without one, it installs from Spack's own public repository. No other kind
@@ -186,8 +193,14 @@ it at the version named.
   step, or with an install step that is not the first step, MUST be refused
   before any step runs. A list whose install step's Spack differs from a
   `spack_setup_executable` the site also set MUST be refused the same way.
+  Because no step comes before it, the install step's `environment` (a proxy
+  or a certificate for fetching) MUST be given as a mapping of variables;
+  the name of an environment an earlier step captured cannot be used.
 - **FR-009**: In check mode the step MUST report what it would do (install,
-  nothing, or what FR-007 says) and change nothing on the node.
+  nothing, or what FR-007 says) and change nothing on the node. When it
+  would install, the steps after it MUST NOT be carried out, since the Spack
+  they would run is not there yet: each is reported as not changed and not
+  previewed, with that reason, and the role succeeds.
 - **FR-010**: A destination that exists and is not a Spack MUST make the
   step fail with nothing changed in it.
 - **FR-011**: The step MUST NOT run anything through a shell, and MUST NOT
@@ -205,11 +218,15 @@ it at the version named.
 
 - **Install step**: a step of the new kind in `spack_setup`: the version,
   the destination, the source (optional), and the options every step may
-  have (`label`; `yes_to_all` does not apply, as no Spack command asks
-  anything here).
+  have (`label`, and `environment` as a mapping; `yes_to_all` does not
+  apply, as no Spack command asks anything here). In the role it is the
+  kind `spack`, with the options `version`, `path` (the destination) and
+  `source`, carried out by the module `spack_checkout` (Clarifications,
+  2026-11-26).
 - **Destination**: the directory Spack is installed in. Its `bin/spack` is
   the Spack the later steps run.
-- **Version**: a release tag of Spack's project, a branch or a commit.
+- **Version**: a release tag of Spack's project, a branch, or a commit's
+  full hash.
 - **Source**: the git repository Spack is fetched from: Spack's public
   repository unless the site names its own copy.
 
