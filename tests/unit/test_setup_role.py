@@ -8,6 +8,7 @@ from pathlib import Path
 import yaml
 from conftest import Spack
 from runner import ROOT
+from spack_source import make_source
 from test_spack_detect import MACHINE
 
 STEPS = [
@@ -211,3 +212,54 @@ def test_a_steps_own_yes_to_all_overrides_the_roles(spack: Spack) -> None:
     on = [{"kind": "command", "args": ["gc"], "changes": "always", "yes_to_all": True}]
     assert spack.setup(on).rc == 0
     assert gc_calls(spack) == [["gc"], ["gc", "--yes-to-all"]]
+
+
+# The spack step (spec 004): Spack installed by the first step, and run by the rest.
+NOT_PREVIEWED = "Spack is not installed yet: check mode does not install it, so this step cannot be previewed"
+
+
+def installed_by_the_role(spack: Spack, where: Path) -> tuple[dict, Path, Path]:
+    """A spack step whose source's bin/spack runs the stand-in and leaves a mark; its path and mark."""
+    mark = where / "ran-the-installed-spack"
+    url, _ = make_source(where, runs=spack.bin / "spack", mark=mark)
+    path = where / "opt" / "spack"
+    return {"kind": "spack", "version": "v1.2.0", "path": str(path), "source": url}, path, mark
+
+
+def test_the_steps_after_a_spack_step_run_the_spack_it_installed(spack: Spack, tmp_path: Path) -> None:
+    step, path, mark = installed_by_the_role(spack, tmp_path)
+    played = spack.setup([step, STEPS[0]])
+    assert played.rc == 0, played.output
+    assert played.changed == [True, True]
+    assert (path / "bin" / "spack").is_file()
+    assert mark.exists(), "the config step did not run the Spack the spack step installed"
+    assert spack.scope("site", "config") == {"build_jobs": 4}
+    assert played.results[0]["result"]["spack"] == str(path / "bin" / "spack")
+
+    again = spack.setup([step, STEPS[0]])
+    assert again.rc == 0, again.output
+    assert again.changed == [False, False]
+
+
+def test_in_check_mode_the_steps_after_an_install_are_not_previewed(spack: Spack, tmp_path: Path) -> None:
+    step, path, _ = installed_by_the_role(spack, tmp_path)
+    played = spack.setup([step, STEPS[0]], check=True)
+    assert played.rc == 0, played.output
+    assert played.changed == [True, False]
+    later = played.results[1]["result"]
+    assert later["previewed"] is False
+    assert later["msg"] == NOT_PREVIEWED
+    assert not path.exists()
+    assert spack.calls("config") == []
+
+
+def test_a_spack_setup_executable_that_disagrees_with_the_spack_step_is_refused(
+    spack: Spack, tmp_path: Path
+) -> None:
+    step, path, _ = installed_by_the_role(spack, tmp_path)
+    played = spack.setup([step, STEPS[0]], spack_setup_executable="/usr/bin/spack")
+    assert played.rc != 0
+    assert "/usr/bin/spack" in played.output
+    assert str(path / "bin" / "spack") in played.output
+    assert played.results == []
+    assert not path.exists()

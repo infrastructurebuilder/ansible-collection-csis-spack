@@ -14,7 +14,16 @@ from pathlib import Path
 
 import pytest
 from ansible_collections.infrastructurebuilder.csis_spack.plugins.module_utils.spack import Spack
-from real_spack import keyring, local_scopes, on_path, publish_keys, signing_key, spack_env, spack_version
+from real_spack import (
+    keyring,
+    local_scopes,
+    on_path,
+    publish_keys,
+    signing_key,
+    spack_env,
+    spack_root,
+    spack_version,
+)
 from runner import run_module
 
 pytestmark = pytest.mark.integration
@@ -221,3 +230,25 @@ def test_the_yes_to_all_help_check_reads_the_real_spacks_help(spack_env: dict[st
     # --scope before the subcommand: only config's own help is read, which does not list it.
     command = ["config", "--scope", "user", "add", "config:build_jobs:2"]
     assert spack.answered(command) == command
+
+
+def test_checkout_installs_the_real_spack_from_its_clone_then_leaves_it_alone(
+    tmp_path: Path, spack_env: dict[str, str], spack_version: str
+) -> None:
+    """spack_checkout from the local clone of each version (no network: the clone is the source)."""
+    source = spack_root(spack_version).as_uri()
+    path = tmp_path / "spack"
+    args = {"version": spack_version, "path": str(path), "source": source}
+    result = run_module("spack_checkout", args, env=spack_env)
+    assert result["failed"] is False, result.get("msg")
+    assert (result["changed"], result["found"]) == (True, "nothing")
+    number = spack_version.removeprefix("v")
+    assert result["spack_version"].startswith(f"{number} "), result["spack_version"]
+    shown = subprocess.run(
+        [str(path / "bin" / "spack"), "--version"], capture_output=True, text=True, check=True
+    ).stdout
+    assert shown.startswith(f"{number} ")
+
+    again = run_module("spack_checkout", args, env=spack_env)
+    assert again["failed"] is False, again.get("msg")
+    assert (again["changed"], again["found"]) == (False, "spack")
