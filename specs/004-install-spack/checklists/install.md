@@ -10,57 +10,57 @@
 
 ## Requirement Completeness
 
-- [ ] CHK001 - Does the spec say what the step reports in each state of the destination it can find (absent, empty, a Spack at the version, a Spack at another version, not a Spack), not only in the states the stories walk through? [Completeness, Spec §FR-004–FR-010]
-- [ ] CHK002 - Is it written down whether a destination that is a symbolic link (to a Spack, or to an empty directory) counts as that Spack or directory, or as "not a Spack"? [Gap]
-- [ ] CHK003 - Does the spec define what "a Spack at the version named" means for a branch: the branch's name being checked out, or its tip matching the source's tip today? [Completeness, Spec §FR-005; research R3]
-- [ ] CHK004 - Are the requirements for a Spack at the version but with Spack's own files edited (a dirty checkout) stated, or deliberately left as "no change"? [Gap, Spec §FR-005]
-- [ ] CHK005 - Is it specified what the step's result carries back to the play (the executable, the version Spack reports, what was found), so that a site can use it in later tasks? [Completeness, Spec §Key Entities; data-model "What the module returns"]
-- [ ] CHK006 - Does the spec state the ownership and permissions of what the step creates (the destination, a parent it makes), or only that they are "the site's"? [Completeness, Spec §Assumptions]
+- [x] CHK001 - Does the spec say what the step reports in each state of the destination it can find (absent, empty, a Spack at the version, a Spack at another version, not a Spack), not only in the states the stories walk through? [Completeness, Spec §FR-004–FR-010]
+- [x] CHK002 - Is it written down whether a destination that is a symbolic link (to a Spack, or to an empty directory) counts as that Spack or directory, or as "not a Spack"? [Gap]
+- [x] CHK003 - Does the spec define what "a Spack at the version named" means for a branch: the branch's name being checked out, or its tip matching the source's tip today? [Completeness, Spec §FR-005; research R3]
+- [x] CHK004 - Are the requirements for a Spack at the version but with Spack's own files edited (a dirty checkout) stated, or deliberately left as "no change"? [Gap, Spec §FR-005]
+- [x] CHK005 - Is it specified what the step's result carries back to the play (the executable, the version Spack reports, what was found), so that a site can use it in later tasks? [Completeness, Spec §Key Entities; data-model "What the module returns"]
+- [x] CHK006 - Does the spec state the ownership and permissions of what the step creates (the destination, a parent it makes), or only that they are "the site's"? [Completeness, Spec §Assumptions]
 
 ## Requirement Clarity
 
-- [ ] CHK007 - Is "reports a version of 1.0 or later" defined precisely enough to judge a development version (`1.3.0.dev0`) and an unreadable answer? [Clarity, Spec §FR-006]
-- [ ] CHK008 - Is "a shorter hash" bounded (how short, and whether a tag or branch whose name is all hexadecimal digits is refused too)? [Clarity, Spec §FR-002]
-- [ ] CHK009 - Is "touches nothing" in a repeat run defined: does running `spack --version` in the destination, which writes Python's caches, count? [Clarity, Spec §US1 AC2, §FR-006]
-- [ ] CHK010 - Is "the destination's parent is made" specific about which parents (one level, or all missing ones) and with what permissions? [Clarity, Spec §Edge Cases]
-- [ ] CHK011 - Is "says what it found" in each failure specified well enough to be tested (which facts the message must name)? [Clarity, Spec §FR-007, §FR-010]
+- [x] CHK007 - Is "reports a version of 1.0 or later" defined precisely enough to judge a development version (`1.3.0.dev0`) and an unreadable answer? [Clarity, Spec §FR-006]
+- [x] CHK008 - Is "a shorter hash" bounded (how short, and whether a tag or branch whose name is all hexadecimal digits is refused too)? [Clarity, Spec §FR-002]
+- [x] CHK009 - Is "touches nothing" in a repeat run defined: does running `spack --version` in the destination, which writes Python's caches, count? [Clarity, Spec §US1 AC2, §FR-006]
+- [x] CHK010 - Is "the destination's parent is made" specific about which parents (one level, or all missing ones) and with what permissions? [Clarity, Spec §Edge Cases]
+- [x] CHK011 - Is "says what it found" in each failure specified well enough to be tested (which facts the message must name)? [Clarity, Spec §FR-007, §FR-010]
 
 ## Requirement Consistency
 
-- [ ] CHK012 - Are the first-step rule (FR-008) and the use of `environment` on the install step consistent everywhere it is described: spec, data model, contract and the role README task? [Consistency, Spec §FR-008; tasks T027]
-- [ ] CHK013 - Do FR-008's "a `spack_setup_executable` the site also set" and the data model's rule (its default `spack` counts as unset; the old name `spack_setup_spack` counts as setting it) say the same thing? [Consistency, Conflict, Spec §FR-008]
-- [ ] CHK014 - Are User Story 1's acceptance scenario 4 and FR-009 consistent about what happens to the steps after the install step in check mode? [Consistency, Spec §US1 AC4, §FR-009]
-- [ ] CHK015 - Is the requirement that a list with no install step behaves exactly as before stated in the spec, and not only in the plan's constraints? [Consistency, Gap, Spec §Assumptions]
-- [ ] CHK016 - Are the spec's words (install step, destination, source) and the confirmed names (`spack`, `path`, `source`, `spack_checkout`) used so that a reader of the README could not take them for two things? [Consistency, Spec §Key Entities]
+- [x] CHK012 - Are the first-step rule (FR-008) and the use of `environment` on the install step consistent everywhere it is described: spec, data model, contract and the role README task? [Consistency, Spec §FR-008; tasks T027]
+- [x] CHK013 - Do FR-008's "a `spack_setup_executable` the site also set" and the data model's rule (its default `spack` counts as unset; the old name `spack_setup_spack` counts as setting it) say the same thing? [Consistency, Conflict, Spec §FR-008]
+- [x] CHK014 - Are User Story 1's acceptance scenario 4 and FR-009 consistent about what happens to the steps after the install step in check mode? [Consistency, Spec §US1 AC4, §FR-009]
+- [x] CHK015 - Is the requirement that a list with no install step behaves exactly as before stated in the spec, and not only in the plan's constraints? [Consistency, Gap, Spec §Assumptions]
+- [x] CHK016 - Are the spec's words (install step, destination, source) and the confirmed names (`spack`, `path`, `source`, `spack_checkout`) used so that a reader of the README could not take them for two things? [Consistency, Spec §Key Entities]
 
 ## Acceptance Criteria Quality
 
-- [ ] CHK017 - Can SC-004 ("a site names where Spack lives once") be judged objectively, given that a site may still set `spack_setup_executable` to the same path? [Measurability, Spec §SC-004]
-- [ ] CHK018 - Does SC-005's "every case of FR-004 to FR-010 is held by a test" include check mode in each of those cases? [Measurability, Spec §SC-005, §FR-009]
-- [ ] CHK019 - Is it stated how User Story 3's second scenario (no source named: installed from Spack's public repository) is to be proved, given that the tests have no network? [Acceptance Criteria, Gap, Spec §US3 AC2]
+- [x] CHK017 - Can SC-004 ("a site names where Spack lives once") be judged objectively, given that a site may still set `spack_setup_executable` to the same path? [Measurability, Spec §SC-004]
+- [x] CHK018 - Does SC-005's "every case of FR-004 to FR-010 is held by a test" include check mode in each of those cases? [Measurability, Spec §SC-005, §FR-009]
+- [x] CHK019 - Is it stated how User Story 3's second scenario (no source named: installed from Spack's public repository) is to be proved, given that the tests have no network? [Acceptance Criteria, Gap, Spec §US3 AC2]
 
 ## Scenario Coverage
 
-- [ ] CHK020 - Are the requirements for a run stopped part-way specified for both ways an install happens (into a new directory beside the destination, and into an empty one in place), including what is left behind and whether a later run removes it? [Coverage, Recovery, Spec §Edge Cases]
-- [ ] CHK021 - Is it specified what happens when two plays install to the same destination at the same time? [Coverage, Gap]
-- [ ] CHK022 - Are the requirements for a destination on a filesystem the play's user cannot write to, or for a parent it cannot write to while the destination is empty and writable, stated? [Coverage, Exception Flow, Gap]
-- [ ] CHK023 - Is the behaviour defined when `git` is present but too old for the commands the step needs? [Coverage, Gap; research R8]
-- [ ] CHK024 - Does the spec say whether a failed install step stops the role, as every step's failure does today, and that the results of the steps before it are kept? [Coverage, Spec §FR-007]
+- [x] CHK020 - Are the requirements for a run stopped part-way specified for both ways an install happens (into a new directory beside the destination, and into an empty one in place), including what is left behind and whether a later run removes it? [Coverage, Recovery, Spec §Edge Cases]
+- [x] CHK021 - Is it specified what happens when two plays install to the same destination at the same time? [Coverage, Gap]
+- [x] CHK022 - Are the requirements for a destination on a filesystem the play's user cannot write to, or for a parent it cannot write to while the destination is empty and writable, stated? [Coverage, Exception Flow, Gap]
+- [x] CHK023 - Is the behaviour defined when `git` is present but too old for the commands the step needs? [Coverage, Gap; research R8]
+- [x] CHK024 - Does the spec say whether a failed install step stops the role, as every step's failure does today, and that the results of the steps before it are kept? [Coverage, Spec §FR-007]
 
 ## Non-Functional Requirements: the network and the source
 
-- [ ] CHK025 - Is "a repeat run needs no network" a stated requirement of the spec, or only a property of the plan's design? [Gap, Spec §FR-005; plan Constraints]
-- [ ] CHK026 - Are the requirements for a site whose mirror uses a private certificate authority, or a proxy, stated (through the step's `environment`), including which variables reach `git`? [Completeness, Spec §FR-003, §FR-008]
-- [ ] CHK027 - Is it specified whether a source address that holds a credential (`https://token@host/spack.git`) may appear in the task's output, the step's result and `git`'s configuration at the destination? [Security, Gap]
-- [ ] CHK028 - Does the spec decide whether the step must verify what it fetched (a signed tag, a known commit for a release), or record that it trusts the source as given? [Security, Gap, Spec §FR-003]
-- [ ] CHK029 - Is it stated whether `source` may name an `ssh://` or local-path repository, and if so what the node needs for it (a key, an agent)? [Clarity, Gap, Spec §FR-003]
-- [ ] CHK030 - Are time limits stated for a fetch that hangs (an unreachable source that does not refuse), or is that left to the play's own timeouts? [Non-Functional, Gap, Spec §Edge Cases "The source cannot be reached"]
+- [x] CHK025 - Is "a repeat run needs no network" a stated requirement of the spec, or only a property of the plan's design? [Gap, Spec §FR-005; plan Constraints]
+- [x] CHK026 - Are the requirements for a site whose mirror uses a private certificate authority, or a proxy, stated (through the step's `environment`), including which variables reach `git`? [Completeness, Spec §FR-003, §FR-008]
+- [x] CHK027 - Is it specified whether a source address that holds a credential (`https://token@host/spack.git`) may appear in the task's output, the step's result and `git`'s configuration at the destination? [Security, Gap]
+- [x] CHK028 - Does the spec decide whether the step must verify what it fetched (a signed tag, a known commit for a release), or record that it trusts the source as given? [Security, Gap, Spec §FR-003]
+- [x] CHK029 - Is it stated whether `source` may name an `ssh://` or local-path repository, and if so what the node needs for it (a key, an agent)? [Clarity, Gap, Spec §FR-003]
+- [x] CHK030 - Are time limits stated for a fetch that hangs (an unreachable source that does not refuse), or is that left to the play's own timeouts? [Non-Functional, Gap, Spec §Edge Cases "The source cannot be reached"]
 
 ## Dependencies & Assumptions
 
-- [ ] CHK031 - Is the assumption that Spack's documented install is only a clone, with no build step, recorded with its source, so that a later Spack version that changes it would be noticed? [Assumption, Spec §Assumptions; research R1]
-- [ ] CHK032 - Is the dependency on `git` being on the node stated where a site reads it first (the README's Requirements), and not only in the step's documentation? [Dependency, Spec §FR-013]
-- [ ] CHK033 - Is the boundary with spec 005 (moving a Spack to another version) stated so that nothing in 004 has to change when 005 is built? [Dependency, Spec §FR-007, §Assumptions]
+- [x] CHK031 - Is the assumption that Spack's documented install is only a clone, with no build step, recorded with its source, so that a later Spack version that changes it would be noticed? [Assumption, Spec §Assumptions; research R1]
+- [x] CHK032 - Is the dependency on `git` being on the node stated where a site reads it first (the README's Requirements), and not only in the step's documentation? [Dependency, Spec §FR-013]
+- [x] CHK033 - Is the boundary with spec 005 (moving a Spack to another version) stated so that nothing in 004 has to change when 005 is built? [Dependency, Spec §FR-007, §Assumptions]
 
 ## Notes
 
