@@ -243,7 +243,9 @@ it at the version named.
 - **FR-007**: When the destination holds a Spack at another version than the
   one named, the step MUST fail and change nothing, saying the version it
   found (the tag, branch or commit checked out, and what `spack --version`
-  printed) and the version asked for. No later step runs. (Moving it to the
+  printed) and the version asked for. No later step runs: as for any step's
+  failure, the role stops there and keeps the results of the steps before
+  it. (Moving it to the
   version named, when a site asks for that, is spec 005.)
 - **FR-008**: The steps after an install step MUST run the Spack it
   installed (`<destination>/bin/spack`). A list with more than one install
@@ -255,7 +257,9 @@ it at the version named.
   exactly `<destination>/bin/spack`, it is accepted.
   Because no step comes before it, the install step's `environment` (a proxy
   or a certificate for fetching) MUST be given as a mapping of variables;
-  the name of an environment an earlier step captured cannot be used.
+  the name of an environment an earlier step captured cannot be used. Every
+  variable in that mapping is set for `git` and for `spack --version`, as
+  given (for example `HTTPS_PROXY`, `NO_PROXY`, `GIT_SSL_CAINFO`).
 - **FR-009**: In check mode the step MUST report what it would do (install,
   nothing, or what FR-007 says) and change nothing on the node. When it
   would install, the steps after it MUST NOT be carried out, since the Spack
@@ -331,7 +335,10 @@ it at the version named.
   same way that the default executable `spack` is: naming it as the default
   source does not build a site into the collection.
 - Installing Spack the way its documentation describes is a copy of its
-  source at a release; there is no build. Bootstrapping Spack's solver,
+  source at a release; there is no build (Spack's own
+  `lib/spack/docs/getting_started.rst`, read in the v1.2.0 checkout;
+  research R1). If a later Spack documents another way, this assumption
+  and the step are revisited in a spec of their own. Bootstrapping Spack's solver,
   which happens the first time Spack concretizes, is not part of the step.
 - The step runs as whatever user the play runs it as. What it makes is
   owned by that user, with that user's umask; an empty destination a site
