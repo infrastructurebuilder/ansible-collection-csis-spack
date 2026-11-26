@@ -5,7 +5,7 @@
 
 - name: "Declare settings | {{ spack_setup_title }}"
   infrastructurebuilder.csis_spack.spack_config:
-    spack: "{{ spack_setup_executable }}"
+    spack: "{{ spack_setup_program }}"
     scope: "{{ spack_setup_step.scope | default(spack_setup_scope) }}"
     settings: "{{ spack_setup_step.settings }}"
     state: "{{ spack_setup_step.state | default(omit) }}"

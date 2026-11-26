@@ -1,0 +1,17 @@
+---
+# A step of kind spack: install Spack at a path, at a version (spec 004). It is
+# the first step, and every step after it runs <path>/bin/spack.
+
+- name: "Install Spack | {{ spack_setup_title }}"
+  infrastructurebuilder.csis_spack.spack_checkout:
+    version: "{{ spack_setup_step.version }}"
+    path: "{{ spack_setup_step.path }}"
+    source: "{{ spack_setup_step.source | default(omit) }}"
+  environment: "{{ spack_setup_step_environment }}"
+  register: spack_setup_done
+
+# In check mode nothing is installed, so the steps after this one have no
+# Spack to preview with; they are recorded as not previewed (step.yml).
+- name: "Note that Spack is not installed yet | {{ spack_setup_title }}"
+  ansible.builtin.set_fact:
+    spack_setup_not_installed: "{{ ansible_check_mode and spack_setup_done.changed }}"

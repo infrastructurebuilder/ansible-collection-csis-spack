@@ -4,7 +4,7 @@
 
 - name: "Declare a mirror | {{ spack_setup_title }}"
   infrastructurebuilder.csis_spack.spack_mirror:
-    spack: "{{ spack_setup_executable }}"
+    spack: "{{ spack_setup_program }}"
     scope: "{{ spack_setup_step.scope | default(spack_setup_scope) }}"
     name: "{{ spack_setup_step.name }}"
     url: "{{ spack_setup_step.url | default(omit) }}"

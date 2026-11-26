@@ -8,6 +8,7 @@ import yaml
 from ansible_collections.infrastructurebuilder.csis_spack.plugins.filter.setup_problems import (
     COMMON,
     KINDS,
+    setup_executable,
     setup_label,
     setup_problems,
 )
@@ -118,3 +119,70 @@ def test_yes_to_all_is_an_option_of_every_kind_that_runs_spack() -> None:
         assert "yes_to_all" in KINDS[kind]["optional"], kind
     problems = setup_problems([{"kind": "environment", "name": "e", "shell": "true", "yes_to_all": True}])
     assert problems == ["step 1 (environment): 'yes_to_all' is not an option of this kind"]
+
+
+# The spack step (spec 004): it installs Spack, and the later steps run what it installed.
+SPACK_STEP = {"kind": "spack", "version": "v1.2.0", "path": "/opt/spack"}
+
+
+def test_a_spack_step_needs_its_version_and_path_and_may_name_a_source() -> None:
+    assert setup_problems([SPACK_STEP, *GOOD]) == []
+    assert setup_problems([SPACK_STEP | {"source": "https://git.example.org/spack.git"}]) == []
+    assert (
+        setup_problems([SPACK_STEP | {"label": "Spack", "environment": {"HTTPS_PROXY": "http://p:3128"}}])
+        == []
+    )
+    assert setup_problems([{"kind": "spack", "path": "/opt/spack"}]) == [
+        "step 1 (spack): 'version' is required"
+    ]
+    assert setup_problems([{"kind": "spack", "version": "v1.2.0"}]) == ["step 1 (spack): 'path' is required"]
+
+
+def test_a_spack_step_takes_no_option_of_another_kind() -> None:
+    for option in ("yes_to_all", "scope", "settings"):
+        assert setup_problems([SPACK_STEP | {option: True}]) == [
+            f"step 1 (spack): {option!r} is not an option of this kind"
+        ]
+
+
+def test_a_spack_step_must_be_the_first_and_only_one() -> None:
+    assert setup_problems([GOOD[1], SPACK_STEP]) == [
+        "step 2 (spack): a spack step must be the first step, so that every step runs the Spack it installs"
+    ]
+    assert len(setup_problems([SPACK_STEP, SPACK_STEP | {"path": "/opt/other"}])) == 1
+
+
+def test_a_spack_steps_path_must_be_absolute() -> None:
+    assert setup_problems([SPACK_STEP | {"path": "spack"}]) == [
+        "step 1 (spack): path must be an absolute path, not 'spack'"
+    ]
+
+
+def test_a_spack_steps_environment_is_a_mapping_since_nothing_comes_before_it() -> None:
+    assert setup_problems([SPACK_STEP | {"environment": "proxied"}]) == [
+        "step 1 (spack): no earlier step captures an environment named 'proxied'"
+    ]
+
+
+def test_spack_setup_executable_must_agree_with_a_spack_step() -> None:
+    for executable in ("spack", "/opt/spack/bin/spack", "/opt/spack/./bin/spack"):
+        assert setup_problems([SPACK_STEP], executable) == [], executable
+    assert setup_problems([SPACK_STEP | {"path": "/opt/spack/"}], "/opt/spack/bin/spack") == []
+    assert setup_problems([SPACK_STEP], "/usr/bin/spack") == [
+        "step 1 (spack): it installs /opt/spack/bin/spack, but spack_setup_executable is "
+        "/usr/bin/spack; leave spack_setup_executable unset, or set it to /opt/spack/bin/spack"
+    ]
+    # With no spack step the executable is not looked at, as before.
+    assert setup_problems(GOOD, "/usr/bin/spack") == []
+    assert setup_problems(GOOD) == []
+
+
+def test_setup_executable_gives_the_spack_the_later_steps_run() -> None:
+    assert setup_executable([SPACK_STEP, *GOOD], "spack") == "/opt/spack/bin/spack"
+    assert setup_executable([SPACK_STEP | {"path": "/opt/spack/"}], "spack") == "/opt/spack/bin/spack"
+    assert setup_executable(GOOD, "/usr/local/bin/spack") == "/usr/local/bin/spack"
+    assert setup_executable([], "spack") == "spack"
+
+
+def test_a_spack_steps_label() -> None:
+    assert setup_label(SPACK_STEP) == "spack: v1.2.0 at /opt/spack"

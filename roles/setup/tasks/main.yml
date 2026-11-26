@@ -10,12 +10,15 @@
       {{ spack_setup_problems | join('; ') }}
     quiet: true
   vars:
-    spack_setup_problems: "{{ spack_setup | infrastructurebuilder.csis_spack.setup_problems }}"
+    spack_setup_problems: >-
+      {{ spack_setup | infrastructurebuilder.csis_spack.setup_problems(spack_setup_executable) }}
 
 - name: Start with no captured environments and no results
   ansible.builtin.set_fact:
     spack_setup_environments: {}
     spack_setup_results: []
+    # Set by a spack step that would install Spack in check mode (kinds/spack.yml).
+    spack_setup_not_installed: false
 
 - name: Carry out each step, in the order written
   ansible.builtin.include_tasks: step.yml
@@ -26,6 +29,9 @@
     label: "{{ spack_setup_index + 1 }}: {{ spack_setup_step | infrastructurebuilder.csis_spack.setup_label }}"
   vars:
     spack_setup_title: "{{ spack_setup_step | infrastructurebuilder.csis_spack.setup_label }}"
+    # The Spack every step runs: the one a first spack step installs, or spack_setup_executable.
+    spack_setup_program: >-
+      {{ spack_setup | infrastructurebuilder.csis_spack.setup_executable(spack_setup_executable) }}
     # A step names an environment an earlier step captured, or gives one as a
     # mapping of variables, or has none.
     spack_setup_step_environment: >-

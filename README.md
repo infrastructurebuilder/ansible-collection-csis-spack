@@ -64,6 +64,7 @@ can also be used alone:
 | `spack_detect` | Has Spack look for compilers and installed packages, and fails when what `require` names is not registered afterwards |
 | `spack_command` | Runs any Spack command, for what the others do not cover, with a stated way to tell whether it changed something |
 | `shell_environment` | Captures the environment some shell lines produce (loading environment modules, say), to give to the tasks that need it |
+| `spack_checkout` | Installs Spack itself at a path, at a version, by the shallow git clone Spack's documentation uses, and leaves a Spack already there at that version alone. The role's `spack` step, which can only be its first, so that the later steps run the Spack it installed |
 
 Every module that runs Spack, and every step of the role but `environment`,
 takes `yes_to_all` (off unless asked for): Spack's confirmations, which
@@ -162,7 +163,9 @@ option.
 
 - ansible-core 2.16 or later; it is tested with the 2.16 series, which
   RHEL 10 ships.
-- Spack 1.0 or later on the managed node. The collection is tested against
+- Spack 1.0 or later on the managed node, unless the role's list starts
+  with a `spack` step, which installs it; that step, and `spack_checkout`,
+  need `git` 2.18 or later on the node. The collection is tested against
   the real Spack 1.0.0, 1.1.0 and 1.2.0 (the version the Cloud Sandbox pins,
   which the tests are written to). Where they differ in the commands the
   collection runs, the collection follows the version it finds; the
@@ -181,6 +184,8 @@ just build       # dist/infrastructurebuilder-csis_spack-<version>.tar.gz
 just test        # ruff, pyright, the unit tests against a stand-in spack (a few minutes), and a build that installs
 just full-test   # the same, then the modules and the role against the real Spack 1.0.0, 1.1.0 and 1.2.0, then ansible-test sanity
 just integration # only the modules and the role against the real Spacks: for seeing a new integration test fail first
+just unit        # only the unit tests, with no lint, type-check or build
+# Both take pytest's arguments, to run some tests: just unit -k checkout, just integration -k checkout
 just format      # rewrite the code in ruff's format, which lint checks
 just import-check  # the tarball through galaxy-importer, the checks Galaxy runs on an upload
 just release     # full-test and the tarball; then tag it with the bare version, as 0.0.1

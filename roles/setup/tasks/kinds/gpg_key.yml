@@ -4,7 +4,7 @@
 
 - name: "Trust keys | {{ spack_setup_title }}"
   infrastructurebuilder.csis_spack.spack_gpg_key:
-    spack: "{{ spack_setup_executable }}"
+    spack: "{{ spack_setup_program }}"
     key: "{{ spack_setup_step.key | default(omit) }}"
     fingerprint: "{{ spack_setup_step.fingerprint | default(omit) }}"
     from_mirrors: "{{ spack_setup_step.from_mirrors | default(omit) }}"
