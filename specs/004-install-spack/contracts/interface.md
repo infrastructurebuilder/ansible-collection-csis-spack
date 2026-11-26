@@ -37,6 +37,10 @@ spack_setup:
 `spack_setup_executable` is not needed with a `spack` step. Set to anything
 but `spack` or `/opt/spack/bin/spack`, it makes the role refuse the list.
 
+`environment`, if given, is a mapping of variables (a proxy, a certificate)
+set for `git` and `spack --version`. The step is first, so a captured
+environment's name cannot be used.
+
 ## What is run on the node
 
 All as argument lists; no shell.
