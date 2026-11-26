@@ -2,7 +2,7 @@
 
 **Spec**: [../spec.md](../spec.md) | **Plan**: [../plan.md](../plan.md)
 
-Names as the plan proposes them, for the operator to confirm.
+Names as the operator confirmed them on 2026-11-26.
 
 ## Module
 

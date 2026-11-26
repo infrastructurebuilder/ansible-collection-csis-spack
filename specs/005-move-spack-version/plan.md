@@ -20,7 +20,7 @@ moves in place (R1), git silently overwrites a site's ignored file that the
 new version tracks (R2, which is why the move compares first), and staging
 the new version beside the path costs one clone (R3).
 
-**Names proposed, for the operator to confirm** before `/speckit-tasks`: the
+**Names, confirmed by the operator on 2026-11-26** (spec, Clarifications): the
 option `move` (bool, default `false`) on `spack_checkout` and on the `spack`
 step, `version_added: 0.0.4` (spec 004's module is not released yet, so both
 go out together), and the result key `moved_from`. See "Names" below.
@@ -71,7 +71,7 @@ the module's docs, `CHANGELOG.md`
 | II. A Repeat Run Changes Nothing, and Says So | A move reports a change; a repeat run finds the Spack at the version and reports none (FR-004). Check mode reports the move and changes nothing, `.git` included, and contacts no source (R4). The option's documentation says what a run with it on does. | Pass |
 | III. Written to What Spack Does | The move is git's, as Spack's install is (004, R1); what git does was tried against the real Spack clones first (R1–R6), and it found the overwrite R2 that the design guards against. After a move the module asks the moved Spack for its version. | Pass |
 | IV. Acceptance Tests Run Through the Justfile | Tests first, seen to fail (`just unit -k move`, `just integration -k move`), then `just test`, then `just full-test`. Every case of FR-002–FR-010 in a real run and in check mode (SC-005). | Pass |
-| V. The Operator Decides | The spec exists on the operator's word (004's Clarifications). The option's name and `version_added` are proposed here and asked before tasks. Committed locally. | Pass |
+| V. The Operator Decides | The spec exists on the operator's word (004's Clarifications). The option's name, `version_added` and the result key were proposed here and confirmed by the operator on 2026-11-26, with three more answers (spec, Clarifications). Committed locally. | Pass |
 | The ATTIC | Not consulted. | Pass |
 
 No violations; Complexity Tracking is not needed.
@@ -86,7 +86,7 @@ files and refuses (R5), as the spec allows.
 
 ### Names
 
-| Thing | Proposed | Why | Weighed |
+| Thing | Chosen | Why | Weighed |
 | --- | --- | --- | --- |
 | The option | `move` (bool, default `false`) | The spec's word; says what it allows | `update` (as `ansible.builtin.git`, which also pulls a branch forward, which this does not); `allow_move` |
 | `version_added` | `0.0.4` | `spack_checkout` itself is 0.0.4 and unreleased | `0.0.5`, a release of its own |

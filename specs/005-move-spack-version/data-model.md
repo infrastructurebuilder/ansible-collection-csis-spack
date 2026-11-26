@@ -2,7 +2,7 @@
 
 **Spec**: [spec.md](spec.md) | **Plan**: [plan.md](plan.md)
 
-Names as the plan proposes them, for the operator to confirm. Everything not
+Names as the operator confirmed them on 2026-11-26. Everything not
 named here is spec 004's ([../004-install-spack/data-model.md](../004-install-spack/data-model.md)).
 
 ## The option

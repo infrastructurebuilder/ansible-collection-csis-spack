@@ -16,6 +16,27 @@ report a change". Spec 004 records the answer under Clarifications. This
 spec adds B as a choice a site makes, off by default, so that 004's answer
 stays what happens when a site does not make it.
 
+## Clarifications
+
+### Session 2026-11-26
+
+- Q: When the new version would overwrite a file the site added to the
+  Spack's directory, what should the move do? → A: Refuse the move, change
+  nothing, and name the files in the way; the site moves them aside and runs
+  again. (Git itself would replace such a file without a word: research R2.)
+- Q: In check mode, should the step ask the source whether the version named
+  exists? → A: No. Check mode contacts no source, as spec 004's does not: it
+  reports the move it would make, and says that whether the version exists,
+  and whether the move would overwrite a site's file, are found only when the
+  move is made.
+- Q: After a move from a different source than the one the Spack was first
+  installed from, which source should the Spack's own git record as its
+  origin? → A: The source named in the step: after a move, `origin` is set
+  to it, so that it names where the current version came from.
+- Q: What should the new option on the install step, and its result, be
+  called? → A: As the plan proposed: the option `move` (true or false,
+  default false), `version_added: 0.0.4`, and the result key `moved_from`.
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - A site moves its nodes to a new Spack by changing one value (Priority: P1)
@@ -84,6 +105,10 @@ apply again; see the move done and the added file still there.
 
 ### Edge Cases
 
+- **The new version has a file where the site added one** (Spack 1.2 has
+  `etc/spack/site/README.md`, which Spack 1.0 leaves to the site): the move
+  is refused, nothing changes, and the files are named. The site moves its
+  files aside and runs again.
 - **The version named does not exist in the source**: the step fails before
   anything at the destination changes, and says which version it could not
   find and where it looked.
@@ -92,7 +117,8 @@ apply again; see the move done and the added file still there.
   nothing, and says why.
 - **The source named differs from the one the Spack there came from**: the
   version is fetched from the source named in the step, which is the site's
-  current choice.
+  current choice, and the Spack's git then records that source as its
+  origin.
 - **A move is stopped part-way**: a later run either completes it or fails
   and says what it found. It never reports success over a Spack that does
   not run, or over one at neither version.
@@ -116,22 +142,28 @@ apply again; see the move done and the added file still there.
 - **FR-003**: With the option on, a Spack at the destination at another
   version MUST be moved to the version named, at the same destination, and
   the step MUST report a change naming the version found and the version
-  moved to. Moving to an older version MUST work the same way.
+  moved to. Moving to an older version MUST work the same way. After a move,
+  the Spack's git MUST record the source named as its origin.
 - **FR-004**: With the option on, a Spack at the destination at the version
   named MUST be left alone, with no change reported.
 - **FR-005**: Before moving, the step MUST refuse, changing nothing, when
   Spack's own files at the destination have been edited, and MUST name the
   edited files.
 - **FR-006**: A move MUST keep every file a site added in the Spack's
-  directory, unchanged.
+  directory, unchanged. When the version moved to has a file of its own at
+  the same place as a file the site added, the move MUST be refused before
+  anything at the destination changes, naming those files.
 - **FR-007**: A move MUST NOT start until the version named has been found
   in the source; if it is not found, nothing at the destination changes.
 - **FR-008**: After a move, the step MUST check that the Spack runs and
   reports the version moved to, 1.0 or later, as spec 004's FR-006 says for
   an install.
 - **FR-009**: In check mode, with the option on, the step MUST report the
-  move it would make and change nothing on the node, including Spack's own
-  history at the destination.
+  move it would make (from which version to which) and change nothing on the
+  node, including Spack's own history at the destination. It MUST NOT
+  contact the source, and its report MUST say that whether the version
+  exists and whether the move would overwrite a site's file are found only
+  when the move is made.
 - **FR-010**: The step MUST NOT rebuild, reconcretize or remove anything
   that the old version built.
 - **FR-011**: The option's documentation MUST say what a move does and keeps,
@@ -141,8 +173,10 @@ apply again; see the move done and the added file still there.
 
 ### Key Entities
 
-- **The move option**: an option of the install step, off by default, that
-  allows a version change at the destination.
+- **The move option**: `move`, an option of the install step (the `spack`
+  step and the module `spack_checkout`), off by default, that allows a
+  version change at the destination. After a move, the result's `moved_from`
+  names the version that was there.
 - **Edited files**: Spack's own files at the destination that differ from
   the version they came from. They stop a move.
 - **Added files**: files at the destination that are not Spack's own (the
@@ -177,8 +211,6 @@ apply again; see the move done and the added file still there.
   asked for.
 - "Spack's own files" are those its git repository tracks at the version
   installed; everything else at the destination is the site's.
-- The option's name is the plan's to choose, in the words the role's other
-  options use.
 - Rebuilding what the old version built is not this step's work. A site
   that needs it adds steps of its own after the install step.
 - No release is cut by this spec. It goes out in a release after spec 004's,
