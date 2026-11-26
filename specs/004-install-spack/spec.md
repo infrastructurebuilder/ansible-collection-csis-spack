@@ -4,8 +4,8 @@
 
 **Created**: 2026-11-25
 
-**Status**: Done 2026-11-26 on `feature/install-spack`: `just test` (326
-tests) and `just full-test` pass. Not merged, not released
+**Status**: Done 2026-11-26: `just test` (326 tests) and `just full-test`
+pass; merged into `develop` (`83c76d3`). Not released
 
 **Input**: User description: "a setup step kind that installs Spack". Asked
 after the operator's question "So does this collection actually install
