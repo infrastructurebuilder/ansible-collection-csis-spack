@@ -210,7 +210,7 @@ def describe(git, real):
     """Say what is at ``real`` when it is not a Spack, or give None when it is one."""
     if not os.path.isdir(real):
         return "%s is a file, not a directory" % real
-    rc, top, _ = git.run("-C", real, "rev-parse", "--show-toplevel")
+    rc, top = git.run("-C", real, "rev-parse", "--show-toplevel")[:2]
     if rc != 0:
         return "%s is a directory that is not a git repository" % real
     if os.path.realpath(top) != real:
@@ -223,10 +223,10 @@ def describe(git, real):
 def checked_out(git, real):
     """Say what HEAD is at: its branch, its tags, or its commit."""
     head = git.must("-C", real, "rev-parse", "HEAD")
-    rc, branch, _ = git.run("-C", real, "symbolic-ref", "-q", "--short", "HEAD")
+    rc, branch = git.run("-C", real, "symbolic-ref", "-q", "--short", "HEAD")[:2]
     if rc == 0 and branch:
         return head, branch, "branch %s" % branch
-    rc, tags, _ = git.run("-C", real, "tag", "--points-at", "HEAD")
+    rc, tags = git.run("-C", real, "tag", "--points-at", "HEAD")[:2]
     if rc == 0 and tags:
         return head, None, "tag %s" % ", ".join(tags.split())
     return head, None, "commit %s" % head
@@ -237,10 +237,10 @@ def at_version(git, real, version):
     head = git.must("-C", real, "rev-parse", "HEAD")
     if FULL_HASH.match(version):
         return head.lower() == version.lower()
-    rc, branch, _ = git.run("-C", real, "symbolic-ref", "-q", "--short", "HEAD")
+    rc, branch = git.run("-C", real, "symbolic-ref", "-q", "--short", "HEAD")[:2]
     if rc == 0 and branch == version:
         return True
-    rc, tagged, _ = git.run("-C", real, "rev-parse", "-q", "--verify", "refs/tags/%s^{commit}" % version)
+    rc, tagged = git.run("-C", real, "rev-parse", "-q", "--verify", "refs/tags/%s^{commit}" % version)[:2]
     return rc == 0 and tagged == head
 
 
@@ -395,7 +395,7 @@ def main():
                 raise CheckoutError("%s: it is not a Spack. Nothing was changed" % what)
             result["found"] = "spack"
             if not at_version(git, real, version):
-                _, _, where = checked_out(git, real)
+                where = checked_out(git, real)[2]
                 try:
                     printed = installer.check(real)
                 except CheckoutError as error:

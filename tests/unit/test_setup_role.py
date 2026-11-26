@@ -221,7 +221,7 @@ NOT_PREVIEWED = "Spack is not installed yet: check mode does not install it, so 
 def installed_by_the_role(spack: Spack, where: Path) -> tuple[dict, Path, Path]:
     """A spack step whose source's bin/spack runs the stand-in and leaves a mark; its path and mark."""
     mark = where / "ran-the-installed-spack"
-    url, _ = make_source(where, runs=spack.bin / "spack", mark=mark)
+    url = make_source(where, runs=spack.bin / "spack", mark=mark)[0]
     path = where / "opt" / "spack"
     return {"kind": "spack", "version": "v1.2.0", "path": str(path), "source": url}, path, mark
 
@@ -242,7 +242,7 @@ def test_the_steps_after_a_spack_step_run_the_spack_it_installed(spack: Spack, t
 
 
 def test_in_check_mode_the_steps_after_an_install_are_not_previewed(spack: Spack, tmp_path: Path) -> None:
-    step, path, _ = installed_by_the_role(spack, tmp_path)
+    step, path = installed_by_the_role(spack, tmp_path)[:2]
     played = spack.setup([step, STEPS[0]], check=True)
     assert played.rc == 0, played.output
     assert played.changed == [True, False]
@@ -256,7 +256,7 @@ def test_in_check_mode_the_steps_after_an_install_are_not_previewed(spack: Spack
 def test_a_spack_setup_executable_that_disagrees_with_the_spack_step_is_refused(
     spack: Spack, tmp_path: Path
 ) -> None:
-    step, path, _ = installed_by_the_role(spack, tmp_path)
+    step, path = installed_by_the_role(spack, tmp_path)[:2]
     played = spack.setup([step, STEPS[0]], spack_setup_executable="/usr/bin/spack")
     assert played.rc != 0
     assert "/usr/bin/spack" in played.output
@@ -268,7 +268,7 @@ def test_a_spack_setup_executable_that_disagrees_with_the_spack_step_is_refused(
 def test_a_spack_step_at_another_version_stops_the_role_before_the_next_step(
     spack: Spack, tmp_path: Path
 ) -> None:
-    step, _, _ = installed_by_the_role(spack, tmp_path)
+    step = installed_by_the_role(spack, tmp_path)[0]
     assert spack.setup([step, STEPS[0]]).rc == 0
     spack.update(calls=[], scopes={})
     played = spack.setup([step | {"version": "v1.0.0"}, STEPS[0]])

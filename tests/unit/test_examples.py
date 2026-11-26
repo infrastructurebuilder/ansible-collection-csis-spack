@@ -295,7 +295,7 @@ def test_spack_installed_by_the_role(spack: Spack, tmp_path: Path) -> None:
     # The unit tests have no network, and may not write to /opt: the example's
     # spack step is given a source and a path of the test's own.
     mark = tmp_path / "ran-the-installed-spack"
-    url, _ = make_source(tmp_path, runs=spack.bin / "spack", mark=mark)
+    url = make_source(tmp_path, runs=spack.bin / "spack", mark=mark)[0]
     path = tmp_path / "opt" / "spack"
     assert steps[0]["kind"] == "spack" and "source" not in steps[0]
     steps[0] = steps[0] | {"source": url, "path": str(path)}
