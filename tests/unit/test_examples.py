@@ -18,6 +18,7 @@ import yaml
 from ansible_collections.infrastructurebuilder.csis_spack.plugins.filter.setup_problems import setup_problems
 from conftest import FAKE, Spack
 from runner import ROOT
+from spack_source import make_source
 
 EXAMPLES = sorted((ROOT / "docs" / "examples").glob("*.yml"))
 KEY = "7500481A18F8F903534D953AC6F328B79BE7166C"
@@ -59,6 +60,7 @@ def test_there_is_an_example_for_each_situation_the_plan_names() -> None:
         "compiler-in-environment-modules",
         "compiler-toolset",
         "site-mirror-with-key",
+        "spack-installed-by-the-role",
         "system-compiler",
         "unwanted-compilers",
     ]
@@ -286,3 +288,20 @@ def test_without_its_environment_the_sandboxes_second_list_fails_loudly(spack: S
     played = spack.setup(intel)
     assert played.rc != 0
     assert "not registered after detection: intel-oneapi-compilers@2024.2.1" in played.output
+
+
+def test_spack_installed_by_the_role(spack: Spack, tmp_path: Path) -> None:
+    steps = load("spack-installed-by-the-role.yml")["spack_setup"]
+    # The unit tests have no network, and may not write to /opt: the example's
+    # spack step is given a source and a path of the test's own.
+    mark = tmp_path / "ran-the-installed-spack"
+    url = make_source(tmp_path, runs=spack.bin / "spack", mark=mark)[0]
+    path = tmp_path / "opt" / "spack"
+    assert steps[0]["kind"] == "spack" and "source" not in steps[0]
+    steps[0] = steps[0] | {"source": url, "path": str(path)}
+    played = spack.setup(steps)
+    assert played.rc == 0, played.output
+    assert played.changed == [True, True, True]
+    assert mark.exists(), "the later steps did not run the Spack the example installs"
+    assert spack.scope("site", "config") == {"build_jobs": 8}
+    assert spack.setup(steps).changed == [False, False, False]

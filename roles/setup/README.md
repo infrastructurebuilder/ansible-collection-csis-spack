@@ -4,7 +4,9 @@ Makes a Spack ready to build, from one piece of configuration: a list of
 steps, carried out in the order written.
 
 The role has no step of its own and knows nothing about any site. Its
-defaults are an empty list, the name `spack`, and the scope `site`. What a
+defaults are an empty list, the name `spack`, and the scope `site`. Spack
+may be on the node already, or the list's first step may install it (a
+`spack` step). What a
 site wants done to its Spack (which settings, which compilers, which
 mirrors, in which order) is entirely in the list, which is that site's
 shell script written as data. Each step is carried out by one of the
@@ -15,7 +17,7 @@ collection's modules, so each can tell whether it changed anything.
 | Variable | Default | What it is |
 | --- | --- | --- |
 | `spack_setup` | `[]` | The steps |
-| `spack_setup_executable` | `spack` | The Spack executable, as a path or a name looked up on `PATH` |
+| `spack_setup_executable` | `spack` | The Spack executable, as a path or a name looked up on `PATH`. Not needed with a `spack` step; see below |
 | `spack_setup_scope` | `site` | The configuration scope of a step that does not name one |
 | `spack_setup_yes_to_all` | `false` | Whether every step answers Spack's confirmations; see below |
 
@@ -69,11 +71,66 @@ asking for the key, or for the keys the mirrors publish, is the consent.
 | `detect` | `spack_detect` | Has Spack look for compilers and installed packages. Discovery: it depends on the machine and on the step's environment | `compilers`, `externals`, `not_buildable`, `exclude`, `paths`, `require`, `scope`, `yes_to_all` |
 | `command` | `spack_command` | Runs any Spack command, for what the kinds above do not cover, with a stated way to tell a change | `args` and `changes` (required), `creates`, `sections`, `scope`, `env`, `yes_to_all` |
 | `environment` | `shell_environment` | Runs shell lines of yours and keeps the environment they produce under a name, for later steps. The only shell the role runs | `name` and `shell` (required), `executable` |
+| `spack` | `spack_checkout` | Installs Spack at a path at a version, by a shallow git clone; leaves a Spack already there at that version alone. Only as the first step | `version` and `path` (required), `source` |
 
 On Spack 1.1, a step cannot write to a configuration scope whose directory
 does not exist yet: the user scope (`~/.spack`) or the system scope
 (`/etc/spack`). Spack 1.1 leaves such a scope out; the step fails and says
 which directory to make. Spack 1.0 and 1.2 make it on the first write.
+
+### Installing Spack: the `spack` step
+
+A list may begin with a `spack` step, which installs Spack where a node
+has none:
+
+```yaml
+spack_setup:
+  - kind: spack
+    version: v1.2.0          # a tag, a branch, or a commit's full 40-digit hash
+    path: /opt/spack         # absolute
+    # source: https://git.example.org/mirrors/spack.git   (default: Spack's own, on GitHub)
+  - kind: config             # runs /opt/spack/bin/spack
+    settings:
+      config:
+        build_jobs: 8
+```
+
+- **Only as the first step**, and only one. Every step after it runs the
+  Spack it installs, `<path>/bin/spack`, so `spack_setup_executable` is not
+  needed. Set to anything but `spack` or exactly `<path>/bin/spack`,
+  including through its old name `spack_setup_spack`, it makes the role
+  refuse the list before any step runs.
+- **What is at `path` decides what it does.** Nothing there, or an empty
+  directory: Spack is cloned there (beside it and moved into place, or into
+  the empty directory in place, keeping its ownership and mode), and the step
+  reports a change. A Spack at the version named, however it got there: left
+  alone, no change, and no network needed. Its own files edited: left alone
+  too, with a warning naming them. A Spack at another version: the step
+  fails, naming what it found and what was asked for, and nothing is
+  changed; this step does not move a Spack to another version. Anything else
+  (a file, a directory that is not a Spack): the step fails, nothing
+  changed.
+- **A commit is given by its full hash.** Any 7 to 39 hexadecimal digits are
+  taken for a short hash and refused, as git cannot fetch by one; a tag or
+  branch so named is refused too.
+- **The node needs `git` 2.18 or later.** The step installs nothing else
+  Spack needs.
+- **`source`** may be any address git accepts. It is trusted as given. One
+  holding a user name or password (`https://token@host/...`) is refused, so
+  the credential is not shown or kept; use a git credential helper or an SSH
+  key. A proxy or a certificate goes in the step's `environment`, which here
+  must be a mapping (no step comes before it to capture one by name); every
+  variable in it is set for `git`.
+- **Spack's package recipes** are fetched by Spack the first time a step
+  needs them, not by this step. A site without the network sets a recipe
+  repository of its own with a `config` step.
+- **In check mode** on a node with no Spack, the `spack` step reports that it
+  would install, and the steps after it are not carried out (there is no
+  Spack yet to preview them with): each is recorded with `previewed: false`
+  and the reason.
+- A run stopped during an install can leave a hidden directory
+  `.<name>.install-*` beside `path`; later runs ignore it, and it may be
+  deleted. Two plays installing to the same path at once are not supported.
 
 `ansible-doc infrastructurebuilder.csis_spack.<module>` describes each
 option. The role passes a step's options to the module as they are, and
@@ -147,5 +204,6 @@ rule you give in `changes`, and in check mode it is not run.
 The collection's `docs/examples/` holds complete lists for a system
 compiler, a compiler behind environment modules, a compiler built by Spack,
 a toolset beside the system's compiler, unwanted compilers, a site mirror
-with its key, and one real site's two scripts. Each is applied by the
+with its key, Spack installed by the role's first step, and one real
+site's two scripts. Each is applied by the
 collection's tests.

@@ -14,7 +14,16 @@ from pathlib import Path
 
 import pytest
 from ansible_collections.infrastructurebuilder.csis_spack.plugins.module_utils.spack import Spack
-from real_spack import keyring, local_scopes, on_path, publish_keys, signing_key, spack_env, spack_version
+from real_spack import (
+    keyring,
+    local_scopes,
+    on_path,
+    publish_keys,
+    signing_key,
+    spack_env,
+    spack_root,
+    spack_version,
+)
 from runner import run_module
 
 pytestmark = pytest.mark.integration
@@ -221,3 +230,44 @@ def test_the_yes_to_all_help_check_reads_the_real_spacks_help(spack_env: dict[st
     # --scope before the subcommand: only config's own help is read, which does not list it.
     command = ["config", "--scope", "user", "add", "config:build_jobs:2"]
     assert spack.answered(command) == command
+
+
+def test_checkout_installs_the_real_spack_from_its_clone_then_leaves_it_alone(
+    tmp_path: Path, spack_env: dict[str, str], spack_version: str
+) -> None:
+    """spack_checkout from the local clone of each version (no network: the clone is the source)."""
+    source = spack_root(spack_version).as_uri()
+    path = tmp_path / "spack"
+    args = {"version": spack_version, "path": str(path), "source": source}
+    result = run_module("spack_checkout", args, env=spack_env)
+    assert result["failed"] is False, result.get("msg")
+    assert (result["changed"], result["found"]) == (True, "nothing")
+    number = spack_version.removeprefix("v")
+    assert result["spack_version"].startswith(f"{number} "), result["spack_version"]
+    shown = subprocess.run(
+        [str(path / "bin" / "spack"), "--version"], capture_output=True, text=True, check=True
+    ).stdout
+    assert shown.startswith(f"{number} ")
+
+    again = run_module("spack_checkout", args, env=spack_env)
+    assert again["failed"] is False, again.get("msg")
+    assert (again["changed"], again["found"]) == (False, "spack")
+
+
+def test_checkout_leaves_the_real_clone_alone_at_its_version_and_refuses_another(
+    spack_env: dict[str, str], spack_version: str
+) -> None:
+    """The local clone of each version, as a Spack a person installed: named with its tag, then another."""
+    clone = spack_root(spack_version)
+    same = run_module("spack_checkout", {"version": spack_version, "path": str(clone)}, env=spack_env)
+    assert same["failed"] is False, same.get("msg")
+    assert (same["changed"], same["found"], same["edited"]) == (False, "spack", [])
+    status = ["git", "-C", str(clone), "status", "--porcelain"]
+    assert subprocess.run(status, capture_output=True, text=True, check=True).stdout == ""
+
+    other = "v1.0.0" if spack_version != "v1.0.0" else "v1.2.0"
+    refused = run_module("spack_checkout", {"version": other, "path": str(clone)}, env=spack_env)
+    assert refused["failed"] is True
+    assert f"tag {spack_version}" in refused["msg"]
+    assert f"{other} was asked for" in refused["msg"]
+    assert subprocess.run(status, capture_output=True, text=True, check=True).stdout == ""
