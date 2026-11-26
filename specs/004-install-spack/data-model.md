@@ -16,7 +16,7 @@ A mapping in `spack_setup`:
 | `path` | yes | string | Absolute. Its parent is made if it is missing. |
 | `source` | no | string | A git repository's address. Default `https://github.com/spack/spack.git`. |
 | `label` | no | string | As every step. |
-| `environment` | no | name or mapping | As every step: what `git` and `spack --version` run in (a proxy, a certificate). |
+| `environment` | no | mapping | What `git` and `spack --version` run in (a proxy, a certificate). A mapping only: the step is first, so no earlier step can capture a named environment. |
 
 Not allowed: `yes_to_all`, `scope`, and every other kind's options.
 
