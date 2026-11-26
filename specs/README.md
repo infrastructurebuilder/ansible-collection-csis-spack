@@ -20,6 +20,7 @@ converge check** is the date of that run.
 | 1 | [002 The setup role's Spack executable is named `spack_setup_executable`](002-setup-executable-rename/spec.md) | ✅ | whoever reads or writes a site's configuration for the `setup` role | a playbook written for 0.3.1 running unchanged, and each of the three cases (new name, old name, both) held by a test | complete 2026-11-17, released in 0.0.1 ([tasks](002-setup-executable-rename/tasks.md)) | `feature/setup-executable-rename` (until the history reset of 2026-11-18) | 14 | 0.0.1 | 2026-11-25 |
 | 2 | [001 The collection is published to Ansible Galaxy](001-galaxy-publish/spec.md) | ✅ | someone writing a playbook; the operator who releases; the Cloud Sandbox | one command installing the collection by name on a clean machine, and a release reaching Galaxy by one action of the operator's | complete 2026-11-19: 0.0.1 published, and the Cloud Sandbox installs it from Galaxy; 0.0.2 proved the last two checks ([tasks](001-galaxy-publish/tasks.md)) | `feature/galaxy-publish` (until the history reset of 2026-11-18) | 22 | 0.0.1, 0.0.2 | 2026-11-25 |
 | 3 | [003 `spack_gpg_key` trusts the mirrors' keys without a prompt](003-mirror-keys-yes-to-all/spec.md) | ✅ | a site whose play trusts its mirrors' keys; a site on Spack 1.0 or 1.1; a site whose Spack commands ask before acting | a `from_mirrors` step finishing with no prompt and reporting no change the second time, and the integration tests passing against the real Spack 1.0.0, 1.1.0 and 1.2.0 | complete 2026-11-25: merged (`058744b`), released in 0.0.3 on Ansible Galaxy, converged; also the version table for Spack 1.0 and 1.1, and `yes_to_all` ([tasks](003-mirror-keys-yes-to-all/tasks.md)) | `feature/mirror-keys-yes-to-all` | 45 | 0.0.3 | 2026-11-25 |
+| 5 | [005 The install step moves a Spack to another version, when a site asks](005-move-spack-version/spec.md) | ❌ | a site moving its nodes to a new Spack | one changed version, with the move allowed, moving a node's Spack in one application, a second reporting no change, and nothing a site added or edited lost | drafted 2026-11-25; needs spec 004 first (on `feature/install-spack`) ([spec](005-move-spack-version/spec.md)) | `feature/move-spack-version` | | | never |
 
 Specs 001 and 002 were finished before `/speckit-converge` was used here,
 and were first checked with it on 2026-11-25, after the fact.
@@ -29,4 +30,7 @@ and were first checked with it on 2026-11-25, after the fact.
 - The Cloud Sandbox (`Cloud-Sandbox`, its own workspace) installs the
   collection from Ansible Galaxy and plans its own work in its own `specs/`.
   Its move to 0.0.3 and back to `from_mirrors` is its work, not a spec here.
-- Nothing else is planned. New work starts with `/speckit-specify`.
+- Spec 004, a `setup` step that installs Spack, is on `feature/install-spack`,
+  not merged yet; it is row 4 once it is. Pinning Spack's package recipes is
+  to be a spec of its own, not yet written.
+- New work starts with `/speckit-specify`.
