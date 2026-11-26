@@ -1,5 +1,35 @@
 # Changelog
 
+## Unreleased
+
+[specs/004-install-spack](specs/004-install-spack/spec.md). A playbook
+written for 0.0.3 runs unchanged: a list with no `spack` step behaves as
+before.
+
+### Added
+
+- A new module, `spack_checkout`, and the `setup` role's `spack` step that
+  carries it out: Spack installed at a path, at a version (a tag, a branch,
+  or a commit's full hash), by the shallow `git clone` Spack's own
+  documentation uses. Nothing at the path, or an empty directory: Spack is
+  installed (beside the path and moved into place, or into the empty
+  directory in place). A Spack already at the version, however it got there:
+  left alone, with no network needed, and a warning if its own files have
+  been edited. A Spack at another version, or anything that is not a Spack:
+  the step fails with nothing changed; moving a Spack to another version is
+  not done. The installed Spack must report 1.0 or later. The node needs
+  `git` 2.18 or later; a source holding a credential is refused. Spack's
+  package recipes are left to Spack, which fetches them when it first needs
+  them.
+- The `spack` step can only be the list's first. The steps after it run the
+  Spack it installed, `<path>/bin/spack`, so `spack_setup_executable` is not
+  needed; set to another Spack, the role refuses the list. In check mode on
+  a node with no Spack, the steps after it are recorded as not previewed.
+- The filter `setup_problems` takes the role's executable as an optional
+  argument, and a new filter, `setup_executable`, gives the Spack a list's
+  steps run.
+- `docs/examples/spack-installed-by-the-role.yml`.
+
 ## 0.0.3 (2026-11-25)
 
 [specs/003-mirror-keys-yes-to-all](specs/003-mirror-keys-yes-to-all/spec.md).

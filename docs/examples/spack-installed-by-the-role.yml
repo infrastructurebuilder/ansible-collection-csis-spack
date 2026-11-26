@@ -1,0 +1,22 @@
+---
+# A node with no Spack: the first step installs it, and every step after it
+# runs the Spack it installed, /opt/spack/bin/spack. spack_setup_executable is
+# not needed (set to anything else, the role refuses the list).
+spack_setup:
+  - kind: spack
+    version: v1.2.0
+    path: /opt/spack
+    # Without a source, Spack's own repository on GitHub. A site whose nodes
+    # cannot reach it names its own mirror of that repository:
+    # source: https://git.example.org/mirrors/spack.git
+    # A proxy or a certificate for fetching goes in the step's environment:
+    # environment:
+    #   HTTPS_PROXY: http://proxy.example.org:3128
+  - kind: config
+    settings:
+      config:
+        build_jobs: 8
+  - kind: mirror
+    name: site-cache
+    url: https://cache.example.org/spack
+    type: [binary]
