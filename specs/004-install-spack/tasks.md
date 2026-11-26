@@ -133,7 +133,7 @@ Spack's public repository (FR-003).
 - [X] T029 [P] In `CHANGELOG.md`, an Unreleased section: the `spack` kind and `spack_checkout` (what each does, that a Spack at another version fails, that the recipes are left to Spack), `setup_problems`'s new argument and `setup_executable`, and that a list without a `spack` step behaves as before
 - [X] T030 Run `just test`
 - [ ] T031 Run `/usr/local/bin/timeout 4200 just full-test` (about 55 minutes: the integration tests on three versions, `ansible-test sanity`, which runs validate-modules on the new module, and Galaxy's import checks); fix what it finds and run it again until it passes
-- [ ] T032 Check every scenario of [quickstart.md](quickstart.md) section 3 is held by a test named in T008–T024, and every FR-001–FR-013 and SC-001–SC-006 of [spec.md](spec.md) by a task above; add a test for any that is not
+- [X] T032 Check every scenario of [quickstart.md](quickstart.md) section 3 is held by a test named in T008–T024, and every FR-001–FR-013 and SC-001–SC-006 of [spec.md](spec.md) by a task above; add a test for any that is not
 - [ ] T033 Set the Status line of `specs/004-install-spack/spec.md` (done, the date, `just test` and `just full-test` passing, not released), and the row of spec 004 in `specs/README.md` (State, Tasks: 33). Commit
 
 ---

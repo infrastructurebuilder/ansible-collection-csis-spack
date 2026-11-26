@@ -499,3 +499,32 @@ def test_the_steps_environment_reaches_git(
     assert played.rc == 0, played.output
     assert recorder.calls
     assert {call["proxy"] for call in recorder.calls} == {"http://proxy.example.org:3128"}
+
+
+# Found by T032's check of every requirement against a test.
+
+
+def test_a_repeat_run_needs_no_network(
+    spack: Spack, tmp_path: Path, source: tuple[str, dict[str, str]]
+) -> None:
+    """FR-005: whether the Spack there is at the version is read from it, not from the source."""
+    path = tmp_path / "spack"
+    for version in ("v1.2.0", "releases/v1.2", source[1]["v1.0.0"]):
+        target = tmp_path / version.replace("/", "-")
+        assert checkout(spack, version=version, path=str(target), source=source[0])["changed"] is True
+        unreachable = "https://git.invalid/spack.git"
+        again = checkout(spack, version=version, path=str(target), source=unreachable)
+        assert (again["failed"], again["changed"]) == (False, False), again.get("msg")
+    assert not path.exists()
+
+
+def test_a_spack_that_prints_no_version_fails(
+    spack: Spack, tmp_path: Path, source: tuple[str, dict[str, str]]
+) -> None:
+    """FR-006: an answer whose first word is not a version fails, here over a Spack already there."""
+    path = tmp_path / "spack"
+    assert checkout(spack, version="v1.2.0", path=str(path), source=source[0])["changed"] is True
+    (path / "bin" / "spack").write_text('#!/bin/sh\necho "Spack, of some version"\n')
+    result = checkout(spack, version="v1.2.0", path=str(path), source=source[0])
+    assert result["failed"] is True
+    assert "did not print a version" in result["msg"]
