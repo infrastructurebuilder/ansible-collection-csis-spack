@@ -32,6 +32,12 @@ with tasks of its own before the `setup` role.
   which fetches them the first time it needs them. Pinning the recipes to a
   version a site names is a spec of its own, not yet written.
 
+### Session 2026-11-26
+
+- Q: (While planning.) The plan proposes the step's kind `spack`, the module
+  `spack_checkout`, the options `version`, `path` and `source`, and
+  `version_added: 0.0.4`. Take them, or change any? → A: Take all four.
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - A node with no Spack gets one from the role (Priority: P1)

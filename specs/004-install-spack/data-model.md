@@ -2,8 +2,8 @@
 
 **Spec**: [spec.md](spec.md) | **Plan**: [plan.md](plan.md)
 
-The names below are the ones the plan proposes (kind `spack`, module
-`spack_checkout`), for the operator to confirm.
+The names (kind `spack`, module `spack_checkout`) were confirmed by the
+operator on 2026-11-26.
 
 ## The step
 

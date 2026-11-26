@@ -19,9 +19,9 @@ network, whether the Spack there is at the version named (R3); what
 `spack --version` says (R5); and how a stopped install is kept from leaving
 something that looks like a Spack (R6).
 
-**Names proposed, for the operator to confirm** before `/speckit-tasks`: the
-kind `spack`, the module `spack_checkout`, the options `version`, `path` and
-`source`, and `version_added: 0.0.4`. See "Names" below.
+**Names, confirmed by the operator on 2026-11-26** (spec, Clarifications):
+the kind `spack`, the module `spack_checkout`, the options `version`, `path`
+and `source`, and `version_added: 0.0.4`. See "Names" below.
 
 ## Technical Context
 
@@ -71,7 +71,7 @@ the filter and the role; integration tests for the module and the role;
 | II. A Repeat Run Changes Nothing, and Says So | A Spack at the version named is left alone and no change is reported (FR-005, R3); the check needs no network, so a moved branch is not a change. Check mode changes nothing and contacts no source (R9, decision 6). A change is reported only for an install. | Pass |
 | III. Written to What Spack Does | Installing Spack has no Spack command: Spack's documentation installs it with `git clone`, which the module runs, as an argument list, never through a shell (R1, R2). Everything the module relies on was tried first against the real Spack clones and against GitHub (R2 to R6). After an install it asks the installed Spack itself for its version (R5). The pin stays 1.2.0. | Pass |
 | IV. Acceptance Tests Run Through the Justfile | Tests first, seen to fail: the module's against real `git`, the filter's, the role's against the stand-in; integration tests against the real 1.0.0, 1.1.0 and 1.2.0. The example is run by `tests/unit/test_examples.py`. `just test` after each change, `just full-test` before done. | Pass |
-| V. The Operator Decides | Three answers are in the spec's Clarifications. The public names and `version_added` are proposed here and asked before tasks are made. Committed locally; merged, pushed and released only on the operator's word. | Pass |
+| V. The Operator Decides | Three answers are in the spec's Clarifications. The public names and `version_added` were proposed here and confirmed by the operator on 2026-11-26. Committed locally; merged, pushed and released only on the operator's word. | Pass |
 | The ATTIC | Not consulted. | Pass |
 
 No violations; Complexity Tracking is not needed.
@@ -86,7 +86,7 @@ changed that would not be.
 
 ### Names
 
-| Thing | Proposed | Why | Weighed |
+| Thing | Chosen | Why | Weighed |
 | --- | --- | --- | --- |
 | The step's kind | `spack` | A step about the Spack itself, beside `config`, `mirror` and the rest, which are about what is in it | `install`: reads as `spack install`, which installs packages |
 | The module | `spack_checkout` | Says what it makes: a checkout of Spack at a version. The other kinds' modules are `spack_<kind>`, but `spack_spack` says nothing | `spack_install`: the same confusion as `install` |

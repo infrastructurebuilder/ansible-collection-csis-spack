@@ -2,7 +2,7 @@
 
 **Spec**: [../spec.md](../spec.md) | **Plan**: [../plan.md](../plan.md)
 
-Names as proposed in the plan, for the operator to confirm.
+Names as confirmed by the operator on 2026-11-26.
 
 ## Module `infrastructurebuilder.csis_spack.spack_checkout`
 

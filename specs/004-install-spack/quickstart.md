@@ -3,7 +3,7 @@
 **Spec**: [spec.md](spec.md) | **Plan**: [plan.md](plan.md)
 
 Everything runs on your local machine, from the repository root, on the
-branch `feature/install-spack`. The names are those the plan proposes.
+branch `feature/install-spack`.
 
 ## 1. The acceptance tests
 
