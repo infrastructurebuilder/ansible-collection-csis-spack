@@ -43,10 +43,12 @@ All as argument lists; no shell.
 
 | Case | Commands |
 | --- | --- |
+| Before anything | `git --version` (2.18 or later) |
 | Finding the state | `git -C <path> rev-parse --show-toplevel`; `git -C <path> rev-parse HEAD`; `git -C <path> symbolic-ref -q --short HEAD`; `git -C <path> rev-parse -q --verify refs/tags/<version>^{commit}` |
 | Install, tag or branch | `git clone --quiet --depth 1 --branch <version> <source> <target>` |
 | Install, full hash | `git init --quiet <target>`; `git -C <target> fetch --quiet --depth 1 <source> <hash>`; `git -C <target> checkout --quiet --detach FETCH_HEAD`; `git -C <target> remote add origin <source>` |
 | The version check, every run | `<target>/bin/spack --version` |
+| Edited files, when at the version | `git -C <path> status --porcelain --untracked-files=no` |
 
 `<target>` is `path` when it was an empty directory, and otherwise a new
 temporary directory in `path`'s parent, renamed to `path` after the check.

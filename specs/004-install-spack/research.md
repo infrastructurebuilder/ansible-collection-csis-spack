@@ -154,6 +154,30 @@ SC-003 (one change, the destination absent) true for a whole list, not just
 for the step. The plan records this as a design decision beyond the spec's
 words.
 
+## R10. The oldest `git` the step accepts (2026-11-26, from the checklist)
+
+Every command the step runs exists in git 2.18: `clone --depth --branch`
+(1.7.10), `symbolic-ref --short` (1.7.10), `checkout --detach` (1.7.5),
+`rev-parse --show-toplevel` and `status --porcelain` (1.7). 2.18 is the git
+of RHEL 8, the oldest RHEL a managed node is likely to run. The tests run
+only the local machine's git (2.50.1); no older git was tried.
+
+**Decision:** the step reads `git --version` first and refuses below 2.18,
+naming both versions. The floor is a documented choice, not a measured one.
+
+## R11. A credential in the source's address (2026-11-26, from the checklist)
+
+An address such as `https://token@host/spack.git` would be printed in the
+task's arguments, returned in the step's result, and written by `git clone`
+into `<path>/.git/config` as `origin`, where every user who can read the
+Spack can read it.
+
+**Decision:** an `http://` or `https://` source with a user name or password
+in it is refused before anything runs. The documentation sends a site to a
+credential helper or an SSH key, which keep the secret out of the address.
+(An `ssh://` or `user@host:path` address names a user, which is not a
+secret, and is accepted.)
+
 ## Decisions
 
 | # | Decision | Alternatives considered |

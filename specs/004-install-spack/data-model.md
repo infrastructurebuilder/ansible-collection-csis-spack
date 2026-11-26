@@ -36,7 +36,8 @@ Not allowed: `yes_to_all`, `scope`, and every other kind's options.
 
 ## The states of the path
 
-Read in this order; the first that holds decides.
+A symbolic link at `path` is followed first, and what it points to is
+judged. Read in this order; the first that holds decides.
 
 | State | How it is told (research R3, R4) |
 | --- | --- |
@@ -77,3 +78,5 @@ later steps are not carried out and are recorded with `changed: false`,
 | `version` | as given |
 | `spack_version` | what `spack --version` printed (absent in check mode before an install) |
 | `found` | `nothing`, `empty` or `spack` |
+| `source` | the address used (the default when none was given) |
+| `edited` | Spack's own files that differ from the version checked out (a warning names them); empty otherwise |
