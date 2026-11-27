@@ -30,7 +30,7 @@ merging, pushing and releasing are on the operator's word.
 
 ## Phase 1: Setup
 
-- [ ] T001 On `feature/known-limits`, run `just test` at the repository root and see it pass (349 tests), so that later failures are the new tests'
+- [X] T001 On `feature/known-limits`, run `just test` at the repository root and see it pass (349 tests), so that later failures are the new tests'
 
 ---
 
@@ -40,9 +40,9 @@ merging, pushing and releasing are on the operator's word.
 stand-in `spack` must run such a script, as the real one does, so that the
 unit tests see what the script does to the copy.
 
-- [ ] T002 Create `tests/unit/stand_in/spack/util/spack_yaml.py` (with empty `__init__.py` files in `tests/unit/stand_in/spack/` and `tests/unit/stand_in/spack/util/`; not under `tests/unit/` itself, so that no package named `spack` is on every test's import path): `load(stream)` and `dump(data, stream)` with PyYAML (`yaml.safe_load`, `yaml.safe_dump(..., sort_keys=False)`), standing in for Spack's own `spack.util.spack_yaml`; a module docstring saying what it stands for and that it is the tests' only, never shipped
-- [ ] T003 In `tests/unit/fake_spack.py`, answer `python <script> <args...>` (no `-c`): run the script with the stand-in's own Python, `sys.argv` set to `[<script>, <args...>]` and `tests/unit/stand_in/` first on `sys.path` for that script only (so `import spack.util.spack_yaml` finds T002's module), and record the call; at `concretize`, also keep the text of the `-e` directory's `spack.yaml` in the state key `concretized_manifest`; leave `python -c` as it is. Document it in the stand-in's docstring
-- [ ] T004 Run `just unit tests/unit/test_spack_env.py tests/unit/test_spack_config.py` and see the existing tests still pass. Commit
+- [X] T002 Create `tests/unit/stand_in/spack/util/spack_yaml.py` (with empty `__init__.py` files in `tests/unit/stand_in/spack/` and `tests/unit/stand_in/spack/util/`; not under `tests/unit/` itself, so that no package named `spack` is on every test's import path): `load(stream)` and `dump(data, stream)` with PyYAML (`yaml.safe_load`, `yaml.safe_dump(..., sort_keys=False)`), standing in for Spack's own `spack.util.spack_yaml`; a module docstring saying what it stands for and that it is the tests' only, never shipped
+- [X] T003 In `tests/unit/fake_spack.py`, answer `python <script> <args...>` (no `-c`): run the script with the stand-in's own Python, `sys.argv` set to `[<script>, <args...>]` and `tests/unit/stand_in/` first on `sys.path` for that script only (so `import spack.util.spack_yaml` finds T002's module), and record the call; at `concretize`, also keep the text of the `-e` directory's `spack.yaml` in the state key `concretized_manifest`; leave `python -c` as it is. Document it in the stand-in's docstring
+- [X] T004 Run `just unit tests/unit/test_spack_env.py tests/unit/test_spack_config.py` and see the existing tests still pass. Commit
 
 **Checkpoint**: the stand-in runs a Spack Python script; nothing uses it yet.
 
