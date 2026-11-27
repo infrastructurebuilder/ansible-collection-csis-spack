@@ -22,10 +22,10 @@ recorded on 2026-11-14:
   `develop:` paths to the originals' absolute paths, with Spack's own Python,
   so that the preview reads and records what a real run would (R4).
 
-**For the operator to confirm** before `/speckit-tasks`: User Story 2's
-design goes beyond the clarified answer (copy the files inside, name the
-ones above). R2 and R3 show that answer cannot work as written; the rewrite
-covers both cases. See "Decision to confirm" below.
+**Confirmed by the operator, 2026-11-27**: User Story 2's design goes beyond
+the clarified answer (copy the files inside, name the ones above), which R2
+and R3 show cannot work as written; the rewrite covers both cases, and the
+spec now says so. See "Decision to confirm" below.
 
 ## Technical Context
 
@@ -68,13 +68,13 @@ unit and integration tests; `CHANGELOG.md`; a note in spec 008
 | II. A Repeat Run Changes Nothing, and Says So | The index: held by a test that a repeat push changes nothing (R1). The preview: check mode writes only into its own temporary directory, and now reports what a real run would. | Pass |
 | III. Written to What Spack Does | Both limits were tried against the real 1.0.0, 1.1.0 and 1.2.0 before design, and the first turned out not to be one (R1). The rewrite uses Spack's own Python and YAML (R4, R5). | Pass |
 | IV. Acceptance Tests Run Through the Justfile | Unit tests first, seen to fail; integration tests on the three versions; `just test`, then `just full-test`. | Pass |
-| V. The Operator Decides | The two answers are in the spec's Clarifications; User Story 2's design, which goes beyond the second, is put to the operator before tasks. Committed locally. | Pass, once confirmed |
+| V. The Operator Decides | The two answers are in the spec's Clarifications, and the operator confirmed User Story 2's design, which goes beyond the second (2026-11-27). Committed locally. | Pass |
 | The ATTIC | Not consulted. | Pass |
 
 No violations; Complexity Tracking is not needed. Re-checked after the
 design below: unchanged.
 
-## Decision to confirm
+## Decision to confirm (confirmed 2026-11-27)
 
 The clarified answer for User Story 2 was: copy the files that relative
 paths name inside the environment's directory into the preview, and name
