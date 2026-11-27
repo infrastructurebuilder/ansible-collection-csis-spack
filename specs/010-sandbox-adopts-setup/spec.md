@@ -362,7 +362,8 @@ repository, and recorded there.
   mirror's list is not applied, and `spack-pubkey.sh` is out of use,
   superseded.
 - **SC-007** *(Cloud-Sandbox)*: Cloud-Sandbox's root `just test` and
-  `just full-test` pass.
+  `just full-test` pass. (Their result is recorded only in Cloud-Sandbox's
+  `INPROGRESS/STAGE-11.md`; this repository holds no evidence of it: T022.)
 
 ## Assumptions
 

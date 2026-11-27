@@ -75,7 +75,7 @@ else can use 0.3.0.)
 ## Phase 5: Validation
 
 - [X] T021 [US1] **Cloud-Sandbox**: with the collection installed from the tag 0.3.0 and the real oneAPI, run the container test from a fresh Spack clone: `site.yml` first 55 changes, second 0; the three roles that use the collection once more in check mode, 0 changes; the comparison with `expected-spack-config.json` holding but for the one difference (SC-002, SC-003; research.md R5)
-- [X] T022 [US4] **Cloud-Sandbox**: run its root `just test` and `just full-test` (SC-007). The result is recorded in Cloud-Sandbox's `STAGE-11.md`; the collection's stage file does not repeat it
+- [X] T022 [US4] **Cloud-Sandbox**: run its root `just test` and `just full-test` (SC-007). Ticked as run: the collection's stage file asked for them and records the container run's numbers, but not their result, which only Cloud-Sandbox's `STAGE-11.md` can show; this repository holds no evidence that they passed
 
 ---
 
@@ -103,4 +103,4 @@ else can use 0.3.0.)
 
 ## Phase 7: Convergence
 
-- [ ] T029 Hold FR-005 with tests in `tests/unit/test_setup_role.py`: the `setup` role included with `ansible.builtin.include_role` from a task tagged (say) `spack`, the play run with `--tags spack`, carries out every step of a list (a `config` step and a `mirror` step against the stand-in `spack`, each seen to run) and records every result; and the role included with `apply:` carries what `apply` gives to every step (with a `become` that needs no password if one can be had on the test machine, or a stand-in become plugin under `tests/`, or else a recorded reason in `specs/010-sandbox-adopts-setup/research.md` R4 why it cannot be tested and what is tested instead) per FR-005 (partial)
+- [ ] T029 Hold FR-005 with tests in `tests/unit/test_setup_role.py`, through a play that includes the role with `ansible.builtin.include_role` from a task (not with `import_role`): (1) **tags**: the including task tagged `spack`, the play run with `--tags spack`, and a list of a `config` step and a `mirror` step against the stand-in `spack`: both steps are carried out (the stand-in records a `config add` and a `mirror add` call, and the scope and mirror hold what the steps say) and `spack_setup_results` has two entries; (2) **apply**: the role included with `apply: {environment: {CSIS_APPLIED: "yes"}}` (a keyword with no side effect), and the stand-in recording the environment it was run in: every Spack call of every step saw `CSIS_APPLIED=yes`. Switching user with `apply: {become: true, become_user: ...}` is Ansible's own `become`, which these tests do not re-prove (it needs a second user and a password-less become on the test machine): record that in `specs/010-sandbox-adopts-setup/research.md` R4, with what the tests do prove (that `apply:` reaches every step), per FR-005 (partial)
