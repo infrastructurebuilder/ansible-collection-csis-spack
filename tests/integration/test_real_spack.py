@@ -283,6 +283,11 @@ def test_move_the_real_spack_forward_and_back(tmp_path: Path) -> None:
     first = {"version": "v1.0.0", "path": str(path), "source": spack_root("v1.0.0").as_uri()}
     result = run_module("spack_checkout", first, env=env)
     assert (result["failed"], result["changed"]) == (False, True), result.get("msg")
+    # The site's own: configuration in the site scope, and a package built into the install tree.
+    site = {"etc/spack/packages.yaml": "packages: {}\n", "opt/spack/built/x": "built by 1.0.0\n"}
+    for name, text in site.items():
+        (path / name).parent.mkdir(parents=True, exist_ok=True)
+        (path / name).write_text(text)
     before = "v1.0.0"
     for version in ("v1.1.0", "v1.2.0", "v1.0.0"):
         args = {"version": version, "path": str(path), "source": spack_root(version).as_uri(), "move": True}
@@ -295,4 +300,22 @@ def test_move_the_real_spack_forward_and_back(tmp_path: Path) -> None:
         assert shown.startswith(version.removeprefix("v") + " "), shown
         again = run_module("spack_checkout", args, env=env)
         assert (again["failed"], again["changed"]) == (False, False), again.get("msg")
+        assert {name: (path / name).read_text() for name in site} == site
         before = version
+
+
+def test_move_the_real_spack_is_refused_over_a_sites_file_it_would_overwrite(tmp_path: Path) -> None:
+    """Research R2: Spack 1.2 tracks etc/spack/site/README.md, which Spack 1.0 leaves to the site."""
+    env = real_spack_env()
+    real_spack_env("v1.0.0")
+    path = tmp_path / "spack"
+    first = {"version": "v1.0.0", "path": str(path), "source": spack_root("v1.0.0").as_uri()}
+    assert run_module("spack_checkout", first, env=env)["changed"] is True
+    mine = path / "etc" / "spack" / "site" / "README.md"
+    mine.parent.mkdir(parents=True)
+    mine.write_text("the site's own notes\n")
+    args = {"version": "v1.2.0", "path": str(path), "source": spack_root().as_uri(), "move": True}
+    refused = run_module("spack_checkout", args, env=env)
+    assert refused["failed"] is True
+    assert "etc/spack/site/README.md" in refused["msg"]
+    assert mine.read_text() == "the site's own notes\n"

@@ -264,6 +264,40 @@ def edited_files(git, real):
     return [line[3:] for line in out.splitlines() if len(line) > 3]
 
 
+def tracked(git, where):
+    """The files git tracks at HEAD in ``where``, as git names them."""
+    rc, out, err = git.module.run_command(
+        [git.executable, "-C", where, "ls-tree", "-r", "-z", "--name-only", "HEAD"],
+        environ_update=GIT_ENVIRONMENT,
+    )
+    if rc != 0:
+        raise CheckoutError("git ls-tree failed at %s: %s" % (where, err.strip()))
+    return {name for name in out.split("\0") if name}
+
+
+def overwritten(git, stage, real):
+    """The site's files at ``real`` that moving to the version at ``stage`` would overwrite.
+
+    Only the files the new version adds are looked at, so the check is as large
+    as Spack's own file list, not as large as a site's install tree (spec 005,
+    research R2). Something already at the place of one of them is the site's;
+    so is a file where the new version needs a directory.
+    """
+    found = set()
+    for name in sorted(tracked(git, stage) - tracked(git, real)):
+        if os.path.lexists(os.path.join(real, name)):
+            found.add(name)
+            continue
+        parts = name.split("/")[:-1]
+        for depth in range(1, len(parts) + 1):
+            prefix = "/".join(parts[:depth])
+            full = os.path.join(real, prefix)
+            if os.path.lexists(full) and not os.path.isdir(full):
+                found.add(prefix)
+                break
+    return sorted(found)
+
+
 def clone(git, source, version, target):
     """Fetch ``version`` of ``source`` into the empty directory ``target``."""
     if FULL_HASH.match(version):
@@ -351,7 +385,13 @@ class Installer:
         try:
             clone(self.git, source, version, stage)
             self.check(stage)
-            # Spec 005, step 4 (a site's file the new version would overwrite) goes here (User Story 2).
+            in_the_way = overwritten(self.git, stage, real)
+            if in_the_way:
+                raise CheckoutError(
+                    "moving the Spack at %s to %s would overwrite these files of the site's, which %s "
+                    "has files of its own at: %s. Nothing was changed: move them aside and run again"
+                    % (real, version, version, ", ".join(in_the_way))
+                )
             staged = "file://" + stage
             if FULL_HASH.match(version):
                 self.git.must("-C", real, "fetch", "--quiet", "--depth", "1", staged, version)
@@ -453,7 +493,12 @@ def main():
                         "a Spack to another version" % (path, where, printed, version)
                     )
                 result["moved_from"] = "%s, where spack --version printed %s" % (where, printed)
-                # Spec 005, step 1 (the site's edited files) goes here (User Story 2).
+                edited = edited_files(git, real)
+                if edited:
+                    raise CheckoutError(
+                        "the Spack at %s, at %s, has these of its own files edited: %s. Nothing was "
+                        "changed: a move would overwrite them" % (path, where, ", ".join(edited))
+                    )
                 result["changed"] = True
                 if module.check_mode:
                     result["msg"] = (

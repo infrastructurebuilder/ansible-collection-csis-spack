@@ -688,3 +688,60 @@ def test_a_move_leaves_a_stale_move_directory_alone(
     assert (moved["failed"], moved["changed"]) == (False, True), moved.get("msg")
     assert (stale / "half").is_file()
     assert moving_beside(path) == [".spack.move-old"]
+
+
+# Spec 005, User Story 2: what a site keeps in its Spack is not lost.
+
+
+def test_a_move_keeps_the_sites_files(
+    spack: Spack, tmp_path: Path, source: tuple[str, dict[str, str]]
+) -> None:
+    path = tmp_path / "spack"
+    installed(spack, path, "v1.0.0", source[0])
+    kept = {
+        "opt/built/package": "a package the old version built\n",
+        "etc/site/packages.yaml": "packages: {}\n",
+        "notes.txt": "a note of the site's\n",
+        "bin/extra": "a tool of the site's\n",
+    }
+    for name, text in kept.items():
+        (path / name).parent.mkdir(parents=True, exist_ok=True)
+        (path / name).write_text(text)
+    moved = checkout(spack, version="v1.2.0", path=str(path), source=source[0], move=True)
+    assert (moved["failed"], moved["changed"]) == (False, True), moved.get("msg")
+    assert {name: (path / name).read_text() for name in kept} == kept
+
+
+@pytest.mark.parametrize("check", [False, True])
+def test_a_move_over_edited_files_is_refused(
+    spack: Spack, tmp_path: Path, source: tuple[str, dict[str, str]], check: bool
+) -> None:
+    path = tmp_path / "spack"
+    installed(spack, path, "v1.0.0", source[0])
+    (path / "README.md").write_text("a site's fix to Spack's own file\n")
+    result = checkout(spack, check=check, version="v1.2.0", path=str(path), source=source[0], move=True)
+    assert result["failed"] is True
+    assert "README.md" in result["msg"]
+    assert "Nothing was changed" in result["msg"]
+    assert head(path) == source[1]["v1.0.0"]
+    assert (path / "README.md").read_text() == "a site's fix to Spack's own file\n"
+    assert moving_beside(path) == []
+
+
+@pytest.mark.parametrize("theirs", ["etc/site/README.md", "etc/site"])
+def test_a_move_that_would_overwrite_a_sites_file_is_refused(
+    spack: Spack, tmp_path: Path, source: tuple[str, dict[str, str]], theirs: str
+) -> None:
+    """Research R2: git would replace the site's file, ignored on v1.0.0 and tracked on v1.2.0."""
+    path = tmp_path / "spack"
+    installed(spack, path, "v1.0.0", source[0])
+    mine = path / theirs
+    mine.parent.mkdir(parents=True, exist_ok=True)
+    mine.write_text("MY OWN\n")
+    result = checkout(spack, version="v1.2.0", path=str(path), source=source[0], move=True)
+    assert result["failed"] is True
+    assert theirs in result["msg"]
+    assert "move them aside" in result["msg"]
+    assert mine.read_text() == "MY OWN\n"
+    assert head(path) == source[1]["v1.0.0"]
+    assert moving_beside(path) == []
