@@ -1,6 +1,6 @@
 [project]
 name = "ansible-collection-csis-spack"
-version = "0.0.3"
+version = "0.0.4"
 description = "Tooling for developing the infrastructurebuilder.csis_spack Ansible collection"
 requires-python = ">=3.12,<3.13"
 dependencies = []
