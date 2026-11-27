@@ -13,7 +13,7 @@
 
 ## Requirement Completeness
 
-- [ ] No [NEEDS CLARIFICATION] markers remain
+- [x] No [NEEDS CLARIFICATION] markers remain
 - [x] Requirements are testable and unambiguous
 - [x] Success criteria are measurable
 - [x] Success criteria are technology-agnostic (no implementation details)
@@ -32,7 +32,7 @@
 ## Notes
 
 - Items marked incomplete require spec updates before `/speckit-clarify` or `/speckit-plan`
-- Three [NEEDS CLARIFICATION] markers (FR-001 to FR-003): which cases count, which documents count, and how far tests hold the coverage. They are asked of the operator.
+- The three [NEEDS CLARIFICATION] markers (FR-001 to FR-003) were answered by the operator on 2026-11-27 and are recorded under Clarifications: every case; what a site reads; tests for names and failures, with a review list for prose.
 - The spec names the collection's interface (modules, options, files), as this
   repository's specs do: for an Ansible collection that is what a site
   writes and reads, not an implementation detail. The readers are the

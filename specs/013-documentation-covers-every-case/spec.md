@@ -23,6 +23,13 @@ documentation covers all the cases of this project."
   each module's and filter's `ansible-doc` (`DOCUMENTATION`, `EXAMPLES`,
   `RETURN`), the `setup` role's README, the README, and `docs/examples/`.
   Not `CHANGELOG.md`, and not the specs.
+- Q: How far should tests hold the documentation to its coverage? → A: Names
+  and failures: tests that every option, return value, step kind and role
+  variable appears in its documentation, that every example under
+  `docs/examples/` is carried out and held to the `async` form and to no
+  site's names, and that every failure and refusal message the modules and
+  the filter can raise is described in the documentation; and a review list
+  in this spec for the prose that tests cannot judge.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -111,13 +118,17 @@ an example for each under `docs/examples/`, and each carried out by
   (`DOCUMENTATION`, `EXAMPLES`, `RETURN`), the `setup` role's README, the
   README, or `docs/examples/`, in the one a site would look in first for it.
   `CHANGELOG.md` and the specs do not count towards coverage.
-- **FR-003**: Wherever it can be, the coverage MUST be held by a test that
-  fails when a case is undocumented or documented wrongly, in the spirit of
-  the constitution's principle IV ("What the documentation promises is held
-  by a test where it can be") [NEEDS CLARIFICATION: how far: (a) tests that
-  every option, return value, kind and variable appears in the documentation;
-  (b) those, plus tests that every failure message the code can raise appears
-  in it; or (c) a review checklist only, with no new tests?].
+- **FR-003**: `just test` MUST fail when a case is undocumented, for every
+  case a machine can check: (a) every module option, return value, step kind
+  and role variable appears in its documentation; (b) every example under
+  `docs/examples/`, and every module's `EXAMPLES`, is carried out or read by
+  the tests and held to the `async` form that previews (principle II) and to
+  no site's names (principle I), the README's examples included; (c) every
+  failure and refusal message that a module or the `setup_problems` filter
+  can raise is described in that module's or the role's documentation. What
+  tests cannot judge (that a reason is given, that a site is told what to
+  do) is held by a review list in this spec, gone through before the spec is
+  called done and again at each release.
 - **FR-004**: Every gap the inventory finds MUST be closed in the
   documentation, and recorded in `CHANGELOG.md`.
 - **FR-005**: The documentation MUST keep saying what the constitution asks
