@@ -70,5 +70,10 @@ in check mode after an install that has not happened:
   result:
     changed: false
     previewed: false
-    msg: "Spack is not installed yet: check mode does not install it, so this step cannot be previewed"
+    msg: "Spack is not installed or moved yet: check mode does not change it, so this step cannot be previewed"
 ```
+
+Changed by spec 005 ([../../005-move-spack-version/](../../005-move-spack-version/spec.md)),
+2026-11-26: the message says "installed or moved", since a `spack` step with
+`move` that would move Spack in check mode leaves the later steps unable to
+preview too. Spec 004's own `spec.md` is left as written.

@@ -333,6 +333,44 @@ class Installer:
             raise
         return printed
 
+    def move(self, source, version, real):
+        """Move the Spack at ``real`` to ``version``, in place (spec 005).
+
+        The version is cloned beside ``real`` first and checked there, so that
+        nothing at ``real`` changes until it is known to be there and to run;
+        it is then fetched from that copy into ``real`` and checked out, as
+        spec 004's install leaves a tag, a branch or a commit.
+        """
+        parent, name = os.path.split(real)
+        try:
+            stage = tempfile.mkdtemp(dir=parent, prefix=".%s.move-" % name)
+        except OSError as error:
+            raise CheckoutError(
+                "could not make a directory beside %s to move Spack: %s" % (real, error)
+            ) from error
+        try:
+            clone(self.git, source, version, stage)
+            self.check(stage)
+            # Spec 005, step 4 (a site's file the new version would overwrite) goes here (User Story 2).
+            staged = "file://" + stage
+            if FULL_HASH.match(version):
+                self.git.must("-C", real, "fetch", "--quiet", "--depth", "1", staged, version)
+                self.git.must("-C", real, "checkout", "--quiet", "--detach", "FETCH_HEAD")
+            elif self.git.run("-C", stage, "symbolic-ref", "-q", "HEAD")[0] == 0:
+                remote = "refs/remotes/origin/%s" % version
+                self.git.must("-C", real, "fetch", "--quiet", "--depth", "1", staged,
+                              "+refs/heads/%s:%s" % (version, remote))  # fmt: skip
+                self.git.must("-C", real, "checkout", "--quiet", "-B", version, remote)
+            else:
+                tag = "refs/tags/%s" % version
+                self.git.must("-C", real, "fetch", "--quiet", "--depth", "1", staged, "+%s:%s" % (tag, tag))
+                self.git.must("-C", real, "checkout", "--quiet", "--detach", "%s^{commit}" % tag)
+            if self.git.run("-C", real, "remote", "set-url", "origin", source)[0] != 0:
+                self.git.must("-C", real, "remote", "add", "origin", source)
+            return self.check(real)
+        finally:
+            shutil.rmtree(stage, ignore_errors=True)
+
     def into_empty(self, source, version, real):
         """Install into the empty directory ``real``, in place."""
         try:
@@ -408,11 +446,24 @@ def main():
                     printed = installer.check(real)
                 except CheckoutError as error:
                     printed = "(it did not run: %s)" % error
-                raise CheckoutError(
-                    "%s holds Spack at another version: it is at %s, and spack --version prints %s; "
-                    "%s was asked for. Nothing was changed: this module does not move a Spack to "
-                    "another version" % (path, where, printed, version)
-                )
+                if not params["move"]:
+                    raise CheckoutError(
+                        "%s holds Spack at another version: it is at %s, and spack --version prints %s; "
+                        "%s was asked for. Nothing was changed: without move, this module does not move "
+                        "a Spack to another version" % (path, where, printed, version)
+                    )
+                result["moved_from"] = "%s, where spack --version printed %s" % (where, printed)
+                # Spec 005, step 1 (the site's edited files) goes here (User Story 2).
+                result["changed"] = True
+                if module.check_mode:
+                    result["msg"] = (
+                        "would move the Spack at %s from %s to %s; whether %s is in the source, and "
+                        "whether the move would overwrite a file of the site's, are found only when the "
+                        "move is made" % (path, where, version, version)
+                    )
+                else:
+                    result["spack_version"] = installer.move(source, version, real)
+                module.exit_json(**result)
             result["spack_version"] = installer.check(real)
             result["edited"] = edited_files(git, real)
             if result["edited"]:

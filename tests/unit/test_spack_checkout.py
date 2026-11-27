@@ -528,3 +528,163 @@ def test_a_spack_that_prints_no_version_fails(
     result = checkout(spack, version="v1.2.0", path=str(path), source=source[0])
     assert result["failed"] is True
     assert "did not print a version" in result["msg"]
+
+
+# Spec 005: with move, a Spack at another version is moved to the one named, in place.
+
+NOT_CHECKED = "found only when the move is made"
+
+
+def moving_beside(path: Path) -> list[str]:
+    return sorted(
+        entry.name for entry in path.parent.iterdir() if entry.name.startswith(f".{path.name}.move-")
+    )
+
+
+def objects(path: Path) -> dict[str, str]:
+    """What git counts in .git, to see that check mode fetched nothing."""
+    counted = dict(line.split(": ", 1) for line in git("count-objects", "-v", cwd=path).splitlines())
+    return {key: counted[key] for key in ("count", "in-pack")}
+
+
+def installed(spack: Spack, path: Path, version: str, url: str) -> None:
+    result = checkout(spack, version=version, path=str(path), source=url)
+    assert (result["failed"], result["changed"]) == (False, True), result.get("msg")
+
+
+def test_a_move_forward_then_back(spack: Spack, tmp_path: Path, source: tuple[str, dict[str, str]]) -> None:
+    url, commits = source
+    path = tmp_path / "spack"
+    installed(spack, path, "v1.0.0", url)
+    for old, new, shown in [("v1.0.0", "v1.2.0", "1.0.0 ("), ("v1.2.0", "v1.0.0", "1.2.0 (")]:
+        moved = checkout(spack, version=new, path=str(path), source=url, move=True)
+        assert moved["failed"] is False, moved.get("msg")
+        assert (moved["changed"], moved["found"]) == (True, "spack")
+        assert f"tag {old}" in moved["moved_from"]
+        assert shown in moved["moved_from"]
+        assert moved["spack_version"].startswith(new.removeprefix("v") + " ")
+        assert head(path) == commits[new]
+        assert git("status", "--porcelain", cwd=path) == ""
+        assert moving_beside(path) == []
+        again = checkout(spack, version=new, path=str(path), source=url, move=True)
+        assert (again["failed"], again["changed"]) == (False, False), again.get("msg")
+        assert "moved_from" not in again
+
+
+def test_a_move_to_a_branch(spack: Spack, tmp_path: Path, source: tuple[str, dict[str, str]]) -> None:
+    url, commits = source
+    path = tmp_path / "spack"
+    installed(spack, path, "v1.0.0", url)
+    moved = checkout(spack, version="releases/v1.2", path=str(path), source=url, move=True)
+    assert (moved["failed"], moved["changed"]) == (False, True), moved.get("msg")
+    assert git("symbolic-ref", "--short", "HEAD", cwd=path) == "releases/v1.2"
+    assert head(path) == commits["releases/v1.2"]
+    again = checkout(spack, version="releases/v1.2", path=str(path), source=url, move=True)
+    assert (again["failed"], again["changed"]) == (False, False)
+
+
+def test_a_move_to_a_commit(spack: Spack, tmp_path: Path, source: tuple[str, dict[str, str]]) -> None:
+    url, commits = source
+    path = tmp_path / "spack"
+    installed(spack, path, "v1.2.0", url)
+    moved = checkout(spack, version=commits["v1.0.0"], path=str(path), source=url, move=True)
+    assert (moved["failed"], moved["changed"]) == (False, True), moved.get("msg")
+    assert head(path) == commits["v1.0.0"]
+    again = checkout(spack, version=commits["v1.0.0"], path=str(path), source=url, move=True)
+    assert (again["failed"], again["changed"]) == (False, False)
+
+
+def test_a_move_from_another_source_makes_it_the_origin(
+    spack: Spack, tmp_path: Path, source: tuple[str, dict[str, str]]
+) -> None:
+    path = tmp_path / "spack"
+    installed(spack, path, "v1.0.0", source[0])
+    second, commits = make_source(tmp_path / "second")
+    moved = checkout(spack, version="v1.2.0", path=str(path), source=second, move=True)
+    assert (moved["failed"], moved["changed"]) == (False, True), moved.get("msg")
+    assert head(path) == commits["v1.2.0"]
+    assert git("remote", "get-url", "origin", cwd=path) == second
+
+
+def test_without_move_another_version_still_fails(
+    spack: Spack, tmp_path: Path, source: tuple[str, dict[str, str]]
+) -> None:
+    path = tmp_path / "spack"
+    installed(spack, path, "v1.0.0", source[0])
+    result = checkout(spack, version="v1.2.0", path=str(path), source=source[0])
+    assert result["failed"] is True
+    assert "v1.2.0 was asked for" in result["msg"]
+    assert "Nothing was changed" in result["msg"]
+    assert head(path) == source[1]["v1.0.0"]
+
+
+@pytest.mark.parametrize("version", ["v9.9.9", "v0.23.0"])
+def test_a_move_that_cannot_be_made_leaves_the_spack_as_it_was(
+    spack: Spack, tmp_path: Path, source: tuple[str, dict[str, str]], version: str
+) -> None:
+    path = tmp_path / "spack"
+    installed(spack, path, "v1.0.0", source[0])
+    before = (head(path), git("tag", cwd=path), listing(path), objects(path))
+    result = checkout(spack, version=version, path=str(path), source=source[0], move=True)
+    assert result["failed"] is True
+    assert ("not found" if version == "v9.9.9" else "needs Spack 1.0 or later") in result["msg"]
+    assert (head(path), git("tag", cwd=path), listing(path), objects(path)) == before
+    assert moving_beside(path) == []
+
+
+def test_check_mode_reports_a_move_and_changes_nothing(
+    spack: Spack, tmp_path: Path, source: tuple[str, dict[str, str]]
+) -> None:
+    path = tmp_path / "spack"
+    installed(spack, path, "v1.0.0", source[0])
+    before = (head(path), git("tag", cwd=path), listing(path), objects(path))
+    recorder = Git(tmp_path)
+    result = checkout(
+        spack, check=True, task_env=recorder.env(spack), version="v1.2.0", path=str(path),
+        source=source[0], move=True,
+    )  # fmt: skip
+    assert (result["failed"], result["changed"]) == (False, True), result.get("msg")
+    assert "tag v1.0.0" in result["moved_from"]
+    assert NOT_CHECKED in result["msg"]
+    assert (head(path), git("tag", cwd=path), listing(path), objects(path)) == before
+    assert moving_beside(path) == []
+    assert set(recorder.subcommands) <= READS | {"tag"}, recorder.subcommands
+
+
+def test_check_mode_with_move_over_a_spack_at_the_version_only_reads(
+    spack: Spack, tmp_path: Path, source: tuple[str, dict[str, str]]
+) -> None:
+    path = tmp_path / "spack"
+    installed(spack, path, "v1.2.0", source[0])
+    recorder = Git(tmp_path)
+    result = checkout(
+        spack, check=True, task_env=recorder.env(spack), version="v1.2.0", path=str(path),
+        source=source[0], move=True,
+    )  # fmt: skip
+    assert (result["failed"], result["changed"]) == (False, False), result.get("msg")
+    assert set(recorder.subcommands) <= READS, recorder.subcommands
+
+
+def test_move_over_what_is_not_a_git_repository_still_fails(
+    spack: Spack, tmp_path: Path, source: tuple[str, dict[str, str]]
+) -> None:
+    path = not_a_spack(tmp_path, "a directory that is not a git repository")
+    before = listing(path)
+    result = checkout(spack, version="v1.2.0", path=str(path), source=source[0], move=True)
+    assert result["failed"] is True
+    assert "it is not a Spack. Nothing was changed" in result["msg"]
+    assert listing(path) == before
+
+
+def test_a_move_leaves_a_stale_move_directory_alone(
+    spack: Spack, tmp_path: Path, source: tuple[str, dict[str, str]]
+) -> None:
+    path = tmp_path / "spack"
+    installed(spack, path, "v1.0.0", source[0])
+    stale = tmp_path / ".spack.move-old"
+    stale.mkdir()
+    (stale / "half").write_text("a move that was stopped\n")
+    moved = checkout(spack, version="v1.2.0", path=str(path), source=source[0], move=True)
+    assert (moved["failed"], moved["changed"]) == (False, True), moved.get("msg")
+    assert (stale / "half").is_file()
+    assert moving_beside(path) == [".spack.move-old"]

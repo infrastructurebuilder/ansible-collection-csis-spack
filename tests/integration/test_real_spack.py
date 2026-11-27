@@ -19,6 +19,7 @@ from real_spack import (
     local_scopes,
     on_path,
     publish_keys,
+    real_spack_env,
     signing_key,
     spack_env,
     spack_root,
@@ -271,3 +272,27 @@ def test_checkout_leaves_the_real_clone_alone_at_its_version_and_refuses_another
     assert f"tag {spack_version}" in refused["msg"]
     assert f"{other} was asked for" in refused["msg"]
     assert subprocess.run(status, capture_output=True, text=True, check=True).stdout == ""
+
+
+def test_move_the_real_spack_forward_and_back(tmp_path: Path) -> None:
+    """Spec 005: one Spack moved 1.0.0 -> 1.1.0 -> 1.2.0 -> 1.0.0, each from its own local clone."""
+    env = real_spack_env()
+    for version in ("v1.0.0", "v1.1.0"):
+        real_spack_env(version)  # the clone, if it is not there yet
+    path = tmp_path / "spack"
+    first = {"version": "v1.0.0", "path": str(path), "source": spack_root("v1.0.0").as_uri()}
+    result = run_module("spack_checkout", first, env=env)
+    assert (result["failed"], result["changed"]) == (False, True), result.get("msg")
+    before = "v1.0.0"
+    for version in ("v1.1.0", "v1.2.0", "v1.0.0"):
+        args = {"version": version, "path": str(path), "source": spack_root(version).as_uri(), "move": True}
+        moved = run_module("spack_checkout", args, env=env)
+        assert (moved["failed"], moved["changed"]) == (False, True), moved.get("msg")
+        assert f"tag {before}" in moved["moved_from"]
+        shown = subprocess.run(
+            [str(path / "bin" / "spack"), "--version"], capture_output=True, text=True, check=True
+        ).stdout
+        assert shown.startswith(version.removeprefix("v") + " "), shown
+        again = run_module("spack_checkout", args, env=env)
+        assert (again["failed"], again["changed"]) == (False, False), again.get("msg")
+        before = version
