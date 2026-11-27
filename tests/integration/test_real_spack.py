@@ -365,6 +365,19 @@ def test_a_preview_reads_relative_includes_where_they_are(
     assert (real["failed"], real["concretized"]) == (False, True), real.get("msg")
     again = run_module("spack_env", args, env=spack_env, check=True)
     assert (again["failed"], again["concretized"]) == (False, False), again.get("msg")
+    assert (site / "shared.yaml").read_text() == "config:\n  build_jobs: 5\n"
+
+    # A develop path above the environment: the preview records the real path (research R3).
+    (site / "zlib-src").mkdir()
+    (env / "spack.yaml").write_text(
+        "spack:\n  specs: [zlib]\n  view: false\n"
+        + store
+        + "  develop:\n    zlib:\n      spec: zlib@=1.3.1\n      path: ../zlib-src\n"
+    )
+    real = run_module("spack_env", args, env=spack_env)
+    assert (real["failed"], real["concretized"]) == (False, True), real.get("msg")
+    again = run_module("spack_env", args, env=spack_env, check=True)
+    assert (again["failed"], again["concretized"]) == (False, False), again.get("msg")
 
     missing = tmp_path / "missing" / "env"
     missing.mkdir(parents=True)

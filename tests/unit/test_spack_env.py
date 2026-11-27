@@ -380,3 +380,15 @@ def test_relative_paths_are_not_looked_for_where_there_are_none(spack: Spack) ->
     result = spack.module("spack_env", path=str(spack.env), check=True)
     assert result["failed"] is False, result.get("msg")
     assert spack.calls("python") == []
+
+
+def test_relative_paths_are_said_in_the_check_mode_note() -> None:
+    """Spec 006, FR-003: the documentation says what a preview reads of relative paths."""
+    import yaml
+    from runner import ROOT
+
+    source = (ROOT / "plugins" / "modules" / "spack_env.py").read_text()
+    documentation = source.split('DOCUMENTATION = r"""', 1)[1].split('"""', 1)[0]
+    description = " ".join(" ".join(yaml.safe_load(documentation)["description"]).split())
+    assert "are read where they are, also above the environment's directory" in description
+    assert "records the same develop paths a real run would" in description

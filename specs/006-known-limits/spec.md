@@ -4,7 +4,7 @@
 
 **Created**: 2026-11-27
 
-**Status**: Draft
+**Status**: Done 2026-11-27: `just test` (353) and `just full-test` (352 unit, 30 integration on Spack 1.0.0, 1.1.0, 1.2.0) passing. Not merged, not released.
 
 **Input**: The operator, 2026-11-27, after reading what the ATTIC holds that no
 live file says: "I want the new small spec for the two undocumented
