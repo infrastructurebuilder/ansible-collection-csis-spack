@@ -1,10 +1,11 @@
 # Changelog
 
-## Unreleased
+## 0.0.4 (2026-11-27)
 
-[specs/004-install-spack](specs/004-install-spack/spec.md). A playbook
-written for 0.0.3 runs unchanged: a list with no `spack` step behaves as
-before.
+[specs/004-install-spack](specs/004-install-spack/spec.md) and
+[specs/005-move-spack-version](specs/005-move-spack-version/spec.md). A
+playbook written for 0.0.3 runs unchanged: a list with no `spack` step
+behaves as before.
 
 ### Added
 
