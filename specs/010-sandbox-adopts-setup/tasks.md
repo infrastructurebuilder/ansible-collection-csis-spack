@@ -100,3 +100,7 @@ else can use 0.3.0.)
   was tried.
 - T021 and T022 before T023 to T026.
 - T028 last.
+
+## Phase 7: Convergence
+
+- [ ] T029 Hold FR-005 with tests in `tests/unit/test_setup_role.py`: the `setup` role included with `ansible.builtin.include_role` from a task tagged (say) `spack`, the play run with `--tags spack`, carries out every step of a list (a `config` step and a `mirror` step against the stand-in `spack`, each seen to run) and records every result; and the role included with `apply:` carries what `apply` gives to every step (with a `become` that needs no password if one can be had on the test machine, or a stand-in become plugin under `tests/`, or else a recorded reason in `specs/010-sandbox-adopts-setup/research.md` R4 why it cannot be tested and what is tested instead) per FR-005 (partial)
