@@ -168,9 +168,12 @@ inventory starts from:
   because none of them uses `async`.
 - No test holds the README's examples free of a site's names: the test for
   site knowledge reads only `plugins/` and `roles/` (spec 011).
-- How the `setup` role behaves when it is included under `--tags`, and with
-  `apply: {become: true, become_user: ...}` (every step runs, as that user),
-  is documented nowhere and held by no test of this repository (spec 010).
+- How a site includes the `setup` role is documented nowhere. Spec 010's
+  T029 (2026-11-27) added the tests: under `--tags`, `include_role` with
+  `apply: {tags: [...]}`, or `import_role`, carries every step, but a plain
+  `include_role` on a tagged task runs none (Ansible's rule); and what
+  `apply` gives reaches every step. The role's README must say which forms
+  to use, and why.
 - `docs/examples/cloud-sandbox.yml` sets two settings in the user scope, as
   the sandbox's script did, though the sandbox itself chose the site scope;
   the example does not say why (spec 010).
