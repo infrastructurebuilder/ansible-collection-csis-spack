@@ -9,6 +9,17 @@
 **Input**: The operator, 2026-11-27: "Make a spec 013 for ensuring that
 documentation covers all the cases of this project."
 
+## Clarifications
+
+### Session 2026-11-27
+
+- Q: Which cases must the documentation cover? → A: Everything: the
+  interface (every module option, return value, role variable and step
+  kind), the behaviour (every failure and refusal a task can report, what
+  check mode and a repeat run do, every difference by Spack version), and
+  every kind of site, each with an example the tests carry out, with the
+  role's behaviour under `--tags` and `apply: become` among the cases.
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - A site finds every case it can meet in the documentation (Priority: P1)
@@ -85,12 +96,12 @@ an example for each under `docs/examples/`, and each carried out by
 
 ### Functional Requirements
 
-- **FR-001**: An inventory MUST list every case of the collection
-  [NEEDS CLARIFICATION: which cases count: (a) every module option, return
-  value and role variable only; (b) those, plus every failure and refusal a
-  task can report, check mode and repeat-run behaviour, and every difference
-  by Spack version; or (c) all of (b), plus every kind of site, each with an
-  example?].
+- **FR-001**: An inventory MUST list every case of the collection, of three
+  kinds: (1) the interface: every module option, return value, role variable
+  and step kind; (2) the behaviour: every failure and refusal a task can
+  report, what check mode and a repeat run do, and every difference by Spack
+  version; (3) every kind of site the collection serves, and the role's
+  behaviour where it is included (under `--tags`, with `apply: become`).
 - **FR-002**: Each case in the inventory MUST be described in the
   documentation a site reads first for it [NEEDS CLARIFICATION: which
   documents count: the modules' `ansible-doc`, the role's README, the README
