@@ -19,6 +19,10 @@ documentation covers all the cases of this project."
   check mode and a repeat run do, every difference by Spack version), and
   every kind of site, each with an example the tests carry out, with the
   role's behaviour under `--tags` and `apply: become` among the cases.
+- Q: Which documents count as "the documentation"? → A: What a site reads:
+  each module's and filter's `ansible-doc` (`DOCUMENTATION`, `EXAMPLES`,
+  `RETURN`), the `setup` role's README, the README, and `docs/examples/`.
+  Not `CHANGELOG.md`, and not the specs.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -103,9 +107,10 @@ an example for each under `docs/examples/`, and each carried out by
   version; (3) every kind of site the collection serves, and the role's
   behaviour where it is included (under `--tags`, with `apply: become`).
 - **FR-002**: Each case in the inventory MUST be described in the
-  documentation a site reads first for it [NEEDS CLARIFICATION: which
-  documents count: the modules' `ansible-doc`, the role's README, the README
-  and `docs/examples/` only; or also the `CHANGELOG.md` and the specs?].
+  documentation a site reads: each module's and filter's `ansible-doc`
+  (`DOCUMENTATION`, `EXAMPLES`, `RETURN`), the `setup` role's README, the
+  README, or `docs/examples/`, in the one a site would look in first for it.
+  `CHANGELOG.md` and the specs do not count towards coverage.
 - **FR-003**: Wherever it can be, the coverage MUST be held by a test that
   fails when a case is undocumented or documented wrongly, in the spirit of
   the constitution's principle IV ("What the documentation promises is held
