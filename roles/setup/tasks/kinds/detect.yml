@@ -5,7 +5,7 @@
 
 - name: "Look at the machine | {{ spack_setup_title }}"
   infrastructurebuilder.csis_spack.spack_detect:
-    spack: "{{ spack_setup_executable }}"
+    spack: "{{ spack_setup_program }}"
     scope: "{{ spack_setup_step.scope | default(spack_setup_scope) }}"
     compilers: "{{ spack_setup_step.compilers | default(omit) }}"
     externals: "{{ spack_setup_step.externals | default(omit) }}"

@@ -1,0 +1,32 @@
+---
+DOCUMENTATION:
+  name: setup_executable
+  short_description: Give the Spack that the steps of a spack_setup list run
+  version_added: 0.0.4
+  description:
+    - When the list's first step is a C(spack) step, which installs Spack,
+      returns the executable it installs, C(<path>/bin/spack). Otherwise
+      returns the executable it is given, the C(setup) role's
+      C(spack_setup_executable), unchanged.
+  author:
+    - infrastructurebuilder (@infrastructurebuilder)
+  options:
+    _input:
+      description: The list of steps.
+      type: list
+      elements: dict
+      required: true
+    executable:
+      description: The executable to give when the list has no C(spack) step first.
+      type: str
+      required: true
+
+EXAMPLES: |
+  - name: Show which Spack the steps run
+    ansible.builtin.debug:
+      msg: "{{ spack_setup | infrastructurebuilder.csis_spack.setup_executable(spack_setup_executable) }}"
+
+RETURN:
+  _value:
+    description: "The executable, such as V(/opt/spack/bin/spack)."
+    type: str

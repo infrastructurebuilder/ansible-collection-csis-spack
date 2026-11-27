@@ -1,0 +1,79 @@
+# Interface contract: the `spack` step and `spack_checkout`
+
+**Spec**: [../spec.md](../spec.md) | **Plan**: [../plan.md](../plan.md)
+
+Names as confirmed by the operator on 2026-11-26.
+
+## Module `infrastructurebuilder.csis_spack.spack_checkout`
+
+```yaml
+- name: Put Spack v1.2.0 at /opt/spack
+  infrastructurebuilder.csis_spack.spack_checkout:
+    version: v1.2.0                      # required: tag, branch, or full commit hash
+    path: /opt/spack                     # required, absolute
+    source: https://github.com/spack/spack.git   # the default
+```
+
+Fails with nothing changed when: the version is a short hash; `path` holds a
+Spack at another version; `path` exists, is not empty, and is not a Spack;
+`git` is not found; `git` fails (the version is not in the source, the
+source cannot be reached); the Spack installed reports a version below 1.0
+or none.
+
+## The step, in the `setup` role
+
+```yaml
+spack_setup:
+  - kind: spack                # only as the first step
+    version: v1.2.0
+    path: /opt/spack
+    # source: https://git.example.org/mirrors/spack.git
+  - kind: config               # runs /opt/spack/bin/spack
+    settings:
+      config:
+        build_jobs: 8
+```
+
+`spack_setup_executable` is not needed with a `spack` step. Set to anything
+but `spack` or `/opt/spack/bin/spack`, it makes the role refuse the list.
+
+`environment`, if given, is a mapping of variables (a proxy, a certificate)
+set for `git` and `spack --version`. The step is first, so a captured
+environment's name cannot be used.
+
+## What is run on the node
+
+All as argument lists; no shell.
+
+| Case | Commands |
+| --- | --- |
+| Before anything | `git --version` (2.18 or later) |
+| Finding the state | `git -C <path> rev-parse --show-toplevel`; `git -C <path> rev-parse HEAD`; `git -C <path> symbolic-ref -q --short HEAD`; `git -C <path> rev-parse -q --verify refs/tags/<version>^{commit}` |
+| Install, tag or branch | `git clone --quiet --depth 1 --branch <version> <source> <target>` |
+| Install, full hash | `git init --quiet <target>`; `git -C <target> fetch --quiet --depth 1 <source> <hash>`; `git -C <target> checkout --quiet --detach FETCH_HEAD`; `git -C <target> remote add origin <source>` |
+| The version check, every run | `<target>/bin/spack --version` |
+| Edited files, when at the version | `git -C <path> status --porcelain --untracked-files=no` |
+
+`<target>` is `path` when it was an empty directory, and otherwise a new
+temporary directory in `path`'s parent, renamed to `path` after the check.
+
+## Results recorded by the role
+
+Each step's entry in `spack_setup_results`, as today. A step not carried out
+in check mode after an install that has not happened:
+
+```yaml
+- step: 2
+  kind: config
+  label: "config: config"
+  changed: false
+  result:
+    changed: false
+    previewed: false
+    msg: "Spack is not installed or moved yet: check mode does not change it, so this step cannot be previewed"
+```
+
+Changed by spec 005 ([../../005-move-spack-version/](../../005-move-spack-version/spec.md)),
+2026-11-26: the message says "installed or moved", since a `spack` step with
+`move` that would move Spack in check mode leaves the later steps unable to
+preview too. Spec 004's own `spec.md` is left as written.

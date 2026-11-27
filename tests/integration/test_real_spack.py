@@ -14,7 +14,17 @@ from pathlib import Path
 
 import pytest
 from ansible_collections.infrastructurebuilder.csis_spack.plugins.module_utils.spack import Spack
-from real_spack import keyring, local_scopes, on_path, publish_keys, signing_key, spack_env, spack_version
+from real_spack import (
+    keyring,
+    local_scopes,
+    on_path,
+    publish_keys,
+    real_spack_env,
+    signing_key,
+    spack_env,
+    spack_root,
+    spack_version,
+)
 from runner import run_module
 
 pytestmark = pytest.mark.integration
@@ -221,3 +231,91 @@ def test_the_yes_to_all_help_check_reads_the_real_spacks_help(spack_env: dict[st
     # --scope before the subcommand: only config's own help is read, which does not list it.
     command = ["config", "--scope", "user", "add", "config:build_jobs:2"]
     assert spack.answered(command) == command
+
+
+def test_checkout_installs_the_real_spack_from_its_clone_then_leaves_it_alone(
+    tmp_path: Path, spack_env: dict[str, str], spack_version: str
+) -> None:
+    """spack_checkout from the local clone of each version (no network: the clone is the source)."""
+    source = spack_root(spack_version).as_uri()
+    path = tmp_path / "spack"
+    args = {"version": spack_version, "path": str(path), "source": source}
+    result = run_module("spack_checkout", args, env=spack_env)
+    assert result["failed"] is False, result.get("msg")
+    assert (result["changed"], result["found"]) == (True, "nothing")
+    number = spack_version.removeprefix("v")
+    assert result["spack_version"].startswith(f"{number} "), result["spack_version"]
+    shown = subprocess.run(
+        [str(path / "bin" / "spack"), "--version"], capture_output=True, text=True, check=True
+    ).stdout
+    assert shown.startswith(f"{number} ")
+
+    again = run_module("spack_checkout", args, env=spack_env)
+    assert again["failed"] is False, again.get("msg")
+    assert (again["changed"], again["found"]) == (False, "spack")
+
+
+def test_checkout_leaves_the_real_clone_alone_at_its_version_and_refuses_another(
+    spack_env: dict[str, str], spack_version: str
+) -> None:
+    """The local clone of each version, as a Spack a person installed: named with its tag, then another."""
+    clone = spack_root(spack_version)
+    same = run_module("spack_checkout", {"version": spack_version, "path": str(clone)}, env=spack_env)
+    assert same["failed"] is False, same.get("msg")
+    assert (same["changed"], same["found"], same["edited"]) == (False, "spack", [])
+    status = ["git", "-C", str(clone), "status", "--porcelain"]
+    assert subprocess.run(status, capture_output=True, text=True, check=True).stdout == ""
+
+    other = "v1.0.0" if spack_version != "v1.0.0" else "v1.2.0"
+    refused = run_module("spack_checkout", {"version": other, "path": str(clone)}, env=spack_env)
+    assert refused["failed"] is True
+    assert f"tag {spack_version}" in refused["msg"]
+    assert f"{other} was asked for" in refused["msg"]
+    assert subprocess.run(status, capture_output=True, text=True, check=True).stdout == ""
+
+
+def test_move_the_real_spack_forward_and_back(tmp_path: Path) -> None:
+    """Spec 005: one Spack moved 1.0.0 -> 1.1.0 -> 1.2.0 -> 1.0.0, each from its own local clone."""
+    env = real_spack_env()
+    for version in ("v1.0.0", "v1.1.0"):
+        real_spack_env(version)  # the clone, if it is not there yet
+    path = tmp_path / "spack"
+    first = {"version": "v1.0.0", "path": str(path), "source": spack_root("v1.0.0").as_uri()}
+    result = run_module("spack_checkout", first, env=env)
+    assert (result["failed"], result["changed"]) == (False, True), result.get("msg")
+    # The site's own: configuration in the site scope, and a package built into the install tree.
+    site = {"etc/spack/packages.yaml": "packages: {}\n", "opt/spack/built/x": "built by 1.0.0\n"}
+    for name, text in site.items():
+        (path / name).parent.mkdir(parents=True, exist_ok=True)
+        (path / name).write_text(text)
+    before = "v1.0.0"
+    for version in ("v1.1.0", "v1.2.0", "v1.0.0"):
+        args = {"version": version, "path": str(path), "source": spack_root(version).as_uri(), "move": True}
+        moved = run_module("spack_checkout", args, env=env)
+        assert (moved["failed"], moved["changed"]) == (False, True), moved.get("msg")
+        assert f"tag {before}" in moved["moved_from"]
+        shown = subprocess.run(
+            [str(path / "bin" / "spack"), "--version"], capture_output=True, text=True, check=True
+        ).stdout
+        assert shown.startswith(version.removeprefix("v") + " "), shown
+        again = run_module("spack_checkout", args, env=env)
+        assert (again["failed"], again["changed"]) == (False, False), again.get("msg")
+        assert {name: (path / name).read_text() for name in site} == site
+        before = version
+
+
+def test_move_the_real_spack_is_refused_over_a_sites_file_it_would_overwrite(tmp_path: Path) -> None:
+    """Research R2: Spack 1.2 tracks etc/spack/site/README.md, which Spack 1.0 leaves to the site."""
+    env = real_spack_env()
+    real_spack_env("v1.0.0")
+    path = tmp_path / "spack"
+    first = {"version": "v1.0.0", "path": str(path), "source": spack_root("v1.0.0").as_uri()}
+    assert run_module("spack_checkout", first, env=env)["changed"] is True
+    mine = path / "etc" / "spack" / "site" / "README.md"
+    mine.parent.mkdir(parents=True)
+    mine.write_text("the site's own notes\n")
+    args = {"version": "v1.2.0", "path": str(path), "source": spack_root().as_uri(), "move": True}
+    refused = run_module("spack_checkout", args, env=env)
+    assert refused["failed"] is True
+    assert "etc/spack/site/README.md" in refused["msg"]
+    assert mine.read_text() == "the site's own notes\n"

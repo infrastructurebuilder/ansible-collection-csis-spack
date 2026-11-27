@@ -20,8 +20,18 @@ from typing import Any
 
 import pytest
 import yaml
+from real_spack import (
+    SPACK_VERSION,
+    local_scopes,
+    on_path,
+    publish_keys,
+    real_spack_env,
+    signing_key,
+    spack_env,
+    spack_root,
+    spack_version,
+)
 from real_spack import keyring as signing_keyring
-from real_spack import local_scopes, on_path, publish_keys, signing_key, spack_env, spack_version
 from runner import ROOT, run_setup
 
 pytestmark = pytest.mark.integration
@@ -216,3 +226,30 @@ def test_the_setup_role_trusts_the_keys_a_mirror_publishes(
 
     assert apply() == [True, True]
     assert apply() == [False, False]
+
+
+def test_a_spack_step_installs_the_real_spack_and_the_next_step_runs_it(tmp_path: Path) -> None:
+    """The pinned Spack installed by the role from its local clone, and configured by what it installed."""
+    pinned = real_spack_env()
+    # Not the clone on PATH: the config step must run the Spack the spack step put at the path.
+    env = {
+        name: value for name, value in pinned.items() if name not in ("PATH", "SPACK_DISABLE_LOCAL_CONFIG")
+    }
+    env |= local_scopes(tmp_path, SPACK_VERSION)
+    path = tmp_path / "spack"
+    steps: list[dict[str, Any]] = [
+        {"kind": "spack", "version": SPACK_VERSION, "path": str(path), "source": spack_root().as_uri()},
+        {"kind": "config", "scope": "user", "settings": {"config": {"build_jobs": 3}}},
+    ]
+    played = run_setup(steps, tmp_path, env=env)
+    assert played.rc == 0, played.output
+    assert played.changed == [True, True]
+    done = subprocess.run(
+        [str(path / "bin" / "spack"), "config", "--scope", "user", "get", "config"],
+        env=os.environ | env, capture_output=True, text=True, check=True,
+    )  # fmt: skip
+    assert yaml.safe_load(done.stdout)["config"]["build_jobs"] == 3
+
+    again = run_setup(steps, tmp_path, env=env)
+    assert again.rc == 0, again.output
+    assert again.changed == [False, False]

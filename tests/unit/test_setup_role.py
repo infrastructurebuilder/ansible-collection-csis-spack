@@ -8,6 +8,7 @@ from pathlib import Path
 import yaml
 from conftest import Spack
 from runner import ROOT
+from spack_source import make_source
 from test_spack_detect import MACHINE
 
 STEPS = [
@@ -211,3 +212,97 @@ def test_a_steps_own_yes_to_all_overrides_the_roles(spack: Spack) -> None:
     on = [{"kind": "command", "args": ["gc"], "changes": "always", "yes_to_all": True}]
     assert spack.setup(on).rc == 0
     assert gc_calls(spack) == [["gc"], ["gc", "--yes-to-all"]]
+
+
+# The spack step (spec 004): Spack installed by the first step, and run by the rest.
+NOT_PREVIEWED = (
+    "Spack is not installed or moved yet: check mode does not change it, so this step cannot be previewed"
+)
+
+
+def installed_by_the_role(spack: Spack, where: Path) -> tuple[dict, Path, Path]:
+    """A spack step whose source's bin/spack runs the stand-in and leaves a mark; its path and mark."""
+    mark = where / "ran-the-installed-spack"
+    url = make_source(where, runs=spack.bin / "spack", mark=mark)[0]
+    path = where / "opt" / "spack"
+    return {"kind": "spack", "version": "v1.2.0", "path": str(path), "source": url}, path, mark
+
+
+def test_the_steps_after_a_spack_step_run_the_spack_it_installed(spack: Spack, tmp_path: Path) -> None:
+    step, path, mark = installed_by_the_role(spack, tmp_path)
+    played = spack.setup([step, STEPS[0]])
+    assert played.rc == 0, played.output
+    assert played.changed == [True, True]
+    assert (path / "bin" / "spack").is_file()
+    assert mark.exists(), "the config step did not run the Spack the spack step installed"
+    assert spack.scope("site", "config") == {"build_jobs": 4}
+    assert played.results[0]["result"]["spack"] == str(path / "bin" / "spack")
+
+    again = spack.setup([step, STEPS[0]])
+    assert again.rc == 0, again.output
+    assert again.changed == [False, False]
+
+
+def test_in_check_mode_the_steps_after_an_install_are_not_previewed(spack: Spack, tmp_path: Path) -> None:
+    step, path = installed_by_the_role(spack, tmp_path)[:2]
+    played = spack.setup([step, STEPS[0]], check=True)
+    assert played.rc == 0, played.output
+    assert played.changed == [True, False]
+    later = played.results[1]["result"]
+    assert later["previewed"] is False
+    assert later["msg"] == NOT_PREVIEWED
+    assert not path.exists()
+    assert spack.calls("config") == []
+
+
+def test_a_spack_setup_executable_that_disagrees_with_the_spack_step_is_refused(
+    spack: Spack, tmp_path: Path
+) -> None:
+    step, path = installed_by_the_role(spack, tmp_path)[:2]
+    played = spack.setup([step, STEPS[0]], spack_setup_executable="/usr/bin/spack")
+    assert played.rc != 0
+    assert "/usr/bin/spack" in played.output
+    assert str(path / "bin" / "spack") in played.output
+    assert played.results == []
+    assert not path.exists()
+
+
+def test_a_spack_step_at_another_version_stops_the_role_before_the_next_step(
+    spack: Spack, tmp_path: Path
+) -> None:
+    step = installed_by_the_role(spack, tmp_path)[0]
+    assert spack.setup([step, STEPS[0]]).rc == 0
+    spack.update(calls=[], scopes={})
+    played = spack.setup([step | {"version": "v1.0.0"}, STEPS[0]])
+    assert played.rc != 0
+    assert "v1.0.0 was asked for" in played.output
+    assert spack.calls("config") == []
+    assert spack.scope("site", "config") == {}
+
+
+def test_the_steps_after_a_move_run_the_moved_spack(spack: Spack, tmp_path: Path) -> None:
+    """Spec 005: a spack step with move, then the steps after it."""
+    step, path, mark = installed_by_the_role(spack, tmp_path)
+    first = spack.setup([step | {"version": "v1.0.0"}, STEPS[0]])
+    assert first.rc == 0, first.output
+    mark.unlink()
+    later = {"kind": "config", "settings": {"config": {"build_jobs": 6}}}
+    played = spack.setup([step | {"move": True}, later])
+    assert played.rc == 0, played.output
+    assert played.changed == [True, True]
+    assert "tag v1.0.0" in played.results[0]["result"]["moved_from"]
+    assert mark.exists(), "the config step did not run the Spack at the path"
+    assert spack.scope("site", "config") == {"build_jobs": 6}
+    assert (path / "bin" / "spack").is_file()
+
+
+def test_in_check_mode_the_steps_after_a_move_are_not_previewed(spack: Spack, tmp_path: Path) -> None:
+    step = installed_by_the_role(spack, tmp_path)[0]
+    assert spack.setup([step | {"version": "v1.0.0"}]).rc == 0
+    spack.update(calls=[])
+    played = spack.setup([step | {"move": True}, STEPS[0]], check=True)
+    assert played.rc == 0, played.output
+    assert played.changed == [True, False]
+    later = played.results[1]["result"]
+    assert (later["previewed"], later["msg"]) == (False, NOT_PREVIEWED)
+    assert spack.calls("config") == []

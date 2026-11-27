@@ -7,6 +7,8 @@ from __future__ import absolute_import, division, print_function
 
 __metaclass__ = type
 
+import posixpath
+
 DOCUMENTATION = r"""
 name: setup_problems
 short_description: List what is wrong with a spack_setup list of steps
@@ -18,6 +20,11 @@ description:
   - It checks that each step is a mapping with a known C(kind), that every
     option belongs to that kind, that the options a kind needs are there, and
     that an environment named by a step was captured by an earlier step.
+  - A C(spack) step, which installs Spack, must be the first step and the only
+    one, and its C(path) must be absolute. Given the role's executable, the
+    filter also refuses one that names another Spack than the one the
+    C(spack) step installs (C(<path>/bin/spack)); the default, C(spack), is
+    taken as not set.
   - It does not check the values. The module of each kind does that when its
     step runs.
 author:
@@ -28,6 +35,12 @@ options:
     type: list
     elements: dict
     required: true
+  executable:
+    description:
+      - The role's C(spack_setup_executable). Without it, a C(spack) step is
+        not compared with it.
+    type: str
+    version_added: 0.0.4
 """
 
 EXAMPLES = r"""
@@ -86,13 +99,49 @@ KINDS = {
         "required": ["name", "shell"],
         "optional": ["executable"],
     },
+    # Installs Spack itself (spec 004). Only as the first step: the steps after
+    # it run the Spack it installs, <path>/bin/spack.
+    "spack": {
+        "module": "spack_checkout",
+        "required": ["version", "path"],
+        # move: spec 005, a Spack at another version moved to the one named.
+        "optional": ["source", "move"],
+    },
 }
+# The role's executable when a site has not set it: plain spack, on PATH.
+DEFAULT_EXECUTABLE = "spack"
 # What any step may also have: its kind, a label for the output, and (except
 # for an environment step) the environment to run in.
 COMMON = ["kind", "label", "environment"]
 
 
-def setup_problems(steps):
+def installed_spack(path):
+    """The executable a spack step installing at ``path`` gives the later steps."""
+    return posixpath.join(posixpath.normpath(path), "bin", "spack")
+
+
+def spack_step_problems(number, step, executable):
+    """What is wrong with a spack step at ``number``, beyond its options."""
+    where = "step %d (spack)" % number
+    problems = []
+    if number != 1:
+        problems.append(
+            "%s: a spack step must be the first step, so that every step runs the Spack it installs" % where
+        )
+    path = step.get("path")
+    if isinstance(path, str) and not posixpath.isabs(path):
+        problems.append("%s: path must be an absolute path, not %r" % (where, path))
+    elif isinstance(path, str) and executable not in (None, DEFAULT_EXECUTABLE):
+        installs = installed_spack(path)
+        if posixpath.normpath(str(executable)) != installs:
+            problems.append(
+                "%s: it installs %s, but spack_setup_executable is %s; leave "
+                "spack_setup_executable unset, or set it to %s" % (where, installs, executable, installs)
+            )
+    return problems
+
+
+def setup_problems(steps, executable=None):
     """List what is wrong with ``steps``; see DOCUMENTATION."""
     if not isinstance(steps, list):
         return ["spack_setup must be a list of steps, not %s" % type(steps).__name__]
@@ -123,11 +172,22 @@ def setup_problems(steps):
             problems.append("%s: no earlier step captures an environment named %r" % (where, wanted))
         elif kind != "environment" and wanted is not None and not isinstance(wanted, (str, dict)):
             problems.append("%s: environment must be a name or a mapping of variables" % where)
+        if kind == "spack":
+            problems.extend(spack_step_problems(number, step, executable))
         if kind == "environment" and isinstance(step.get("name"), str):
             if step["name"] in environments:
                 problems.append("%s: an earlier step already captures %r" % (where, step["name"]))
             environments.add(step["name"])
     return problems
+
+
+def setup_executable(steps, executable):
+    """Give the Spack the steps run: the one a first spack step installs, or ``executable``."""
+    if isinstance(steps, list) and steps and isinstance(steps[0], dict):
+        first = steps[0]
+        if first.get("kind") == "spack" and isinstance(first.get("path"), str):
+            return installed_spack(first["path"])
+    return executable
 
 
 def setup_label(step):
@@ -159,6 +219,8 @@ def setup_label(step):
         detail = " ".join(str(arg) for arg in step.get("args") or [])
     elif kind == "environment":
         detail = str(step.get("name"))
+    elif kind == "spack":
+        detail = "%s at %s" % (step.get("version"), step.get("path"))
     else:
         detail = ""
     return ("%s: %s" % (kind, detail)) if detail else str(kind)
@@ -168,4 +230,8 @@ class FilterModule:
     """The collection's filters."""
 
     def filters(self):
-        return {"setup_problems": setup_problems, "setup_label": setup_label}
+        return {
+            "setup_problems": setup_problems,
+            "setup_executable": setup_executable,
+            "setup_label": setup_label,
+        }

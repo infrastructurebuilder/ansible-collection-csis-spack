@@ -44,6 +44,11 @@ test: lint typecheck tree
     uv run pytest -q -n auto
     just --justfile {{ justfile() }} install-check
 
+# Only the unit tests, or some of them (arguments go to pytest: just unit -k checkout), for seeing a new test fail or pass while working. Not a substitute for test: no lint, no type-check, no build.
+[positional-arguments]
+unit *args: tree
+    uv run pytest -q -n auto "$@"
+
 # Build the tarball and install it into a throw-away collections path.
 install-check: build
     rm -rf .tmp/installed
@@ -61,9 +66,10 @@ full-test: test import-check
     cd {{ sanity_tree }} && git init -q && git add -A
     cd {{ sanity_tree }} && uv run --project {{ justfile_directory() }} ansible-test sanity --venv --python 3.12
 
-# Only the modules and the setup role against the real Spack v1.2.0 (cloned into .tmp/ once), without the rest of full-test: for seeing a new integration test fail before the change it tests. Not a substitute for test or full-test.
-integration: tree
-    uv run pytest -q -m integration tests/integration
+# Only the modules and the setup role against the real Spack 1.0.0, 1.1.0 and 1.2.0 (cloned into .tmp/ once), without the rest of full-test: for seeing a new integration test fail before the change it tests. Not a substitute for test or full-test. Arguments go to pytest, to run some of them: just integration -k checkout (full-test passes none).
+[positional-arguments]
+integration *args: tree
+    uv run pytest -q -m integration tests/integration "$@"
 
 # Build the tarball and run galaxy-importer on it, the checks Galaxy runs when a version is uploaded (ansible-doc and ansible-lint).
 import-check: build

@@ -1,8 +1,24 @@
 ---
 # One step of spack_setup: the tasks of its kind, then a line in the results.
 
+# Decided before the step runs: a spack step sets spack_setup_not_installed itself.
+- name: "Decide whether the step can be carried out | {{ spack_setup_title }}"
+  ansible.builtin.set_fact:
+    spack_setup_skipped: "{{ spack_setup_not_installed }}"
+
 - name: "Carry out the step | {{ spack_setup_title }}"
   ansible.builtin.include_tasks: "kinds/{{ spack_setup_step.kind }}.yml"
+  when: not spack_setup_skipped
+
+# Check mode after a spack step that would install or move Spack: there is no
+# Spack to run yet, so the step is not carried out, and says why.
+- name: "Note that the step is not previewed | {{ spack_setup_title }}"
+  ansible.builtin.set_fact:
+    spack_setup_done:
+      changed: false
+      previewed: false
+      msg: "Spack is not installed or moved yet: check mode does not change it, so this step cannot be previewed"
+  when: spack_setup_skipped
 
 - name: "Record what the step did | {{ spack_setup_title }}"
   ansible.builtin.set_fact:
