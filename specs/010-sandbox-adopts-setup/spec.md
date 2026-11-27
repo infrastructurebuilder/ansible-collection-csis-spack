@@ -264,7 +264,7 @@ repository, and recorded there.
   `include_role` on a tagged task runs none of the role's steps under
   `--tags`: Ansible gives an include's tags to the include, not to what it
   includes; this is Ansible's rule, not the role's, and the role's
-  documentation says how to include it (spec 013).
+  README says how to include it ("Including it from a play", T030).
 - **FR-006** *(Collection)*: A second application of the same lists MUST
   change nothing and report no change, and an application in check mode
   afterwards MUST report no change.

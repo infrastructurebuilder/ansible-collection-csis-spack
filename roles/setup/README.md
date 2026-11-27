@@ -203,6 +203,53 @@ Where a site has to do something of its own between two parts, such as
 install a compiler, it applies the role twice with two lists. The role
 keeps nothing between applications.
 
+## Including it from a play
+
+`roles:` and `ansible.builtin.import_role` apply the role as written. When
+it is included from a task with `ansible.builtin.include_role` instead,
+two things are worth knowing.
+
+- **Under `--tags`, give the tag with `apply:`.** Ansible gives the tags of
+  an `include_role` task to the include only, not to the tasks it brings
+  in. A play run with `--tags spack` runs a task tagged `spack` that
+  includes this role, and then none of the role's steps. To run every step,
+  pass the tag on with `apply:`, or import the role instead:
+
+  ```yaml
+  - name: Set Spack up
+    ansible.builtin.include_role:
+      name: infrastructurebuilder.csis_spack.setup
+      apply:
+        tags: [spack]
+    tags: [spack]
+
+  # or, statically:
+  - name: Set Spack up
+    ansible.builtin.import_role:
+      name: infrastructurebuilder.csis_spack.setup
+    tags: [spack]
+  ```
+
+- **What `apply:` gives reaches every step.** To set Spack up as another
+  user, give `become` and `become_user` there, as for any role; an
+  `environment` given there reaches every Spack command a step runs:
+
+  ```yaml
+  - name: Set Spack up as the login user
+    ansible.builtin.include_role:
+      name: infrastructurebuilder.csis_spack.setup
+      apply:
+        become: true
+        become_user: "{{ login_user }}"
+  ```
+
+The role has no tags of its own: tagging its steps `always` would run them
+under any `--tags`, also those meant to leave the role out. The collection's
+tests (`tests/unit/test_setup_role.py`) hold both forms under `--tags`, that
+a task merely tagged and including the role runs none of its steps, and
+that an `environment` given with `apply:` reaches every step; becoming
+another user is then Ansible's own `become`, not the role's.
+
 ## Declared and discovered
 
 A `config`, `mirror` or `gpg_key` step declares a state. It is compared
