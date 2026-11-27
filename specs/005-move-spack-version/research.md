@@ -117,6 +117,6 @@ leaves them where they are, except where R2 bites.
 | --- | --- | --- |
 | 1 | The move is a fetch and a checkout in place, as R1 | Install side by side and swap a link: the spec asks for in place (Assumptions) |
 | 2 | The new version is staged beside the path, checked, and compared with the site's files before the path changes (R2, R3) | Checking out and hoping: loses a site's ignored file (R2); fetching into the path first: changes `.git` before the checks |
-| 3 | A collision with any file git does not track refuses the move | Refusing only for ignored files: an untracked one stops git anyway, but with git's own message; listing both gives one message |
+| 3 | A file the new version adds that is already at the path, or a file where the new version needs a directory, refuses the move; only the files the new version adds are looked at | Walking every file git does not track at the path (`git ls-files --others`): the same refusals, but sized by the site's install tree, which can be far larger (`/speckit-analyze`, P1); refusing only for ignored files: an untracked one stops git anyway, but with git's own message |
 | 4 | `origin` is set to the source named after a move | Leaving it: the Spack would name a source it no longer came from |
 | 5 | Check mode contacts no source (R4) | `ls-remote` in check mode |

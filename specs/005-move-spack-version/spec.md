@@ -107,8 +107,10 @@ apply again; see the move done and the added file still there.
 
 - **The new version has a file where the site added one** (Spack 1.2 has
   `etc/spack/site/README.md`, which Spack 1.0 leaves to the site): the move
-  is refused, nothing changes, and the files are named. The site moves its
-  files aside and runs again.
+  is refused, nothing changes, and the files are named. The same holds for a
+  site's file where the new version has a directory (a file named
+  `etc/spack/site` against Spack 1.2's `etc/spack/site/README.md`). The site
+  moves its files aside and runs again.
 - **The version named does not exist in the source**: the step fails before
   anything at the destination changes, and says which version it could not
   find and where it looked.
@@ -151,8 +153,9 @@ apply again; see the move done and the added file still there.
   edited files.
 - **FR-006**: A move MUST keep every file a site added in the Spack's
   directory, unchanged. When the version moved to has a file of its own at
-  the same place as a file the site added, the move MUST be refused before
-  anything at the destination changes, naming those files.
+  the same place as a file the site added, or a directory where the site has
+  a file, the move MUST be refused before anything at the destination
+  changes, naming those files.
 - **FR-007**: A move MUST NOT start until the version named has been found
   in the source; if it is not found, nothing at the destination changes.
 - **FR-008**: After a move, the step MUST check that the Spack runs and
