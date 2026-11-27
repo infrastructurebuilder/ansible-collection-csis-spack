@@ -4,8 +4,8 @@
 
 **Created**: 2026-11-25
 
-**Status**: Done 2026-11-26 on `feature/move-spack-version`: `just test` (345
-tests) and `just full-test` pass. Not merged, not released. It changes spec
+**Status**: Done 2026-11-26: `just test` (345 tests) and `just full-test`
+pass; merged into `develop` (`0b7babe`) 2026-11-27. Not released. It changes spec
 004's install step ([specs/004-install-spack/](../004-install-spack/spec.md)),
 merged into this branch on 2026-11-26
 
