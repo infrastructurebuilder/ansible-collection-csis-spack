@@ -127,12 +127,17 @@ nothing at the path has changed before step 5:
    file where the new version has a directory is caught by the second test;
    git would refuse it, or, for an ignored file, remove it.
 5. **Move**: fetch from the staged copy into the path (`git -C <path> fetch
-   --quiet --depth 1 file://<stage> <ref>`: `refs/tags/<v>:refs/tags/<v>`
-   for a tag, `refs/heads/<b>:refs/remotes/origin/<b>` for a branch, the
+   --quiet --depth 1 file://<stage> <ref>`: `+refs/tags/<v>:refs/tags/<v>`
+   for a tag, `+refs/heads/<b>:refs/remotes/origin/<b>` for a branch, the
    hash for a commit); check out (`checkout --quiet --detach
    '<v>^{commit}'`, `checkout --quiet -B <b> origin/<b>`, or `checkout
    --quiet --detach FETCH_HEAD`); set `origin` to the source named
-   (`remote set-url origin <source>`).
+   (`remote set-url origin <source>`, or `remote add origin <source>` for a
+   Spack with no `origin`, as one a person cloned and renamed the remote of).
+   The `+` lets the fetch replace a local tag or branch of that name that an
+   earlier source left at another commit: without it git refuses ("would
+   clobber existing tag"), and a move after a change of source would fail.
+   (Both recorded after `/speckit-converge`, T024.)
 6. **Check the moved Spack**: `<path>/bin/spack --version` (FR-008).
 7. **Clean up**: remove the staged copy, in every case.
 

@@ -36,11 +36,11 @@ All as argument lists; no shell. `<stage>` is a new directory
 | Staged version | `<stage>/bin/spack --version` |
 | Compare | `git -C <stage> ls-tree -r --name-only HEAD`; `git -C <path> ls-tree -r --name-only HEAD`; then, for each file only the new version tracks, whether it, or a file at one of its parent directories, exists at the path (no command: the module looks) |
 | Kind of version | `git -C <stage> symbolic-ref -q HEAD` (a branch if it succeeds) |
-| Fetch, tag | `git -C <path> fetch --quiet --depth 1 file://<stage> refs/tags/<v>:refs/tags/<v>` |
-| Fetch, branch | `git -C <path> fetch --quiet --depth 1 file://<stage> refs/heads/<b>:refs/remotes/origin/<b>` |
+| Fetch, tag | `git -C <path> fetch --quiet --depth 1 file://<stage> +refs/tags/<v>:refs/tags/<v>` (the `+` replaces a tag of that name an earlier source left) |
+| Fetch, branch | `git -C <path> fetch --quiet --depth 1 file://<stage> +refs/heads/<b>:refs/remotes/origin/<b>` |
 | Fetch, commit | `git -C <path> fetch --quiet --depth 1 file://<stage> <hash>` |
 | Check out | `git -C <path> checkout --quiet --detach '<v>^{commit}'`, or `-B <b> origin/<b>`, or `--detach FETCH_HEAD` |
-| Origin | `git -C <path> remote set-url origin <source>` |
+| Origin | `git -C <path> remote set-url origin <source>`; if the Spack has no `origin`, `git -C <path> remote add origin <source>` |
 | Moved version | `<path>/bin/spack --version` |
 
 In check mode only spec 004's reads run.
