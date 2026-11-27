@@ -95,9 +95,9 @@ preview succeeds and, after a real concretize, reports no change.
 
 ## Phase 5: Polish & Cross-Cutting Concerns
 
-- [ ] T014 [P] In `CHANGELOG.md`, an Unreleased section: `spack_env`'s preview now reads relative `include:` and `develop:` paths where they are (it failed on an include above the environment, and recorded a wrong develop path); `spack_buildcache_push`'s `update_index` documented (Spack rebuilds the index only after a push that sent something)
-- [ ] T015 [P] In `specs/008-repeat-runs-say-so/spec.md`, Out of Scope, beside the two limits: a note that spec 006 found the index limit not to be one (research R1 of spec 006) and removed the preview's (FR-006 of spec 006)
-- [ ] T016 Run `just test`
+- [X] T014 [P] In `CHANGELOG.md`, an Unreleased section: `spack_env`'s preview now reads relative `include:` and `develop:` paths where they are (it failed on an include above the environment, and recorded a wrong develop path); `spack_buildcache_push`'s `update_index` documented (Spack rebuilds the index only after a push that sent something)
+- [X] T015 [P] In `specs/008-repeat-runs-say-so/spec.md`, Out of Scope, beside the two limits: a note that spec 006 found the index limit not to be one (research R1 of spec 006) and removed the preview's (FR-004 of spec 006)
+- [X] T016 Run `just test`
 - [ ] T017 Run `/usr/local/bin/timeout 4200 just full-test` (about 55 minutes); fix what it finds and run it again until it passes
 - [ ] T018 Check every FR-001–FR-006 and SC-001–SC-003 of [spec.md](spec.md), and the scenarios of [quickstart.md](quickstart.md), against a test or a task above; add any missing
 - [ ] T019 Set the Status line of `specs/006-known-limits/spec.md` (done, the date, `just test` and `just full-test` passing, not merged, not released) and spec 006's row in `specs/README.md` (State, Tasks: 19). Commit
