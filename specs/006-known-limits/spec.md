@@ -21,6 +21,13 @@ the retrospective of that work), and are true of the code today.
   The index is rebuilt only after a push that sent something, so a repeat
   run changes nothing. An index that drifted by other means is not put right
   by an ordinary run.
+- Q: In check mode, `spack_env` previews from a copy of the environment, so
+  files its `spack.yaml` names by a relative path are not found. What should
+  happen? → A: Bring them along: before the copy is concretized, the files
+  and directories that relative `include:` and `develop:` paths name are
+  copied in, so that they resolve as they do for the real environment. A
+  path the copy cannot reproduce, one that leads above the environment's
+  directory, is named in the result and in the documentation.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -77,13 +84,17 @@ the documentation says it is.
 
 **Acceptance Scenarios**:
 
-1. **Given** an environment whose `spack.yaml` names a file by a relative
-   path, **When** `spack_env` runs in check mode, **Then** [NEEDS
-   CLARIFICATION: is the limit only documented (the preview may fail or
-   differ, and the documentation says so and what to do), or removed (the
-   files the relative paths name are copied with the environment, or the
-   copy is made so that they resolve, and the preview matches a real run)?].
-2. **Given** the module's documentation, **When** a site reads check mode,
+1. **Given** an environment whose `spack.yaml` names a file or directory by
+   a relative path inside the environment's directory (`include:
+   ./extra.yaml`, a `develop:` package's `path: ./src`), **When** `spack_env`
+   runs in check mode, **Then** the preview concretizes with those files in
+   reach and says what a real run would, and nothing of the real environment
+   is touched.
+2. **Given** a relative path that leads above the environment's directory
+   (`../shared.yaml`), **When** `spack_env` runs in check mode, **Then** the
+   result names that path as not brought into the preview, and the preview is
+   made without it.
+3. **Given** the module's documentation, **When** a site reads check mode,
    **Then** it says what the preview sees of files named by relative paths.
 
 ---
@@ -93,7 +104,12 @@ the documentation says it is.
 - **An `include:` or `develop:` path that is absolute**: it resolves the same
   from the copy, and is not this spec's concern.
 - **A relative path that points outside the environment's directory**
-  (`../shared.yaml`): it is named by the same rule as any relative path.
+  (`../shared.yaml`): it is not brought into the preview; the result names
+  it (FR-004).
+- **A relative path that names nothing**: as for the real environment,
+  Spack reports it; the preview does not invent it.
+- **A large `develop:` source tree**: it is copied for the preview; the
+  documentation says that check mode copies it, so a site knows the cost.
 - **`update_index: true` with `force`**: a forced push is a push, so the
   index is rebuilt after it, as today.
 - **An index that drifted** (a mirror edited by hand, a push from elsewhere
@@ -116,10 +132,13 @@ the documentation says it is.
 - **FR-003**: `spack_env`'s documentation of check mode MUST say what the
   preview sees of files that `spack.yaml` names by a relative path, and what
   a site with such an environment should do.
-- **FR-004**: In check mode, an environment whose `spack.yaml` names files by
-  a relative path MUST [NEEDS CLARIFICATION: see User Story 2, scenario 1:
-  be documented as possibly previewing wrongly, or be previewed with those
-  files in reach].
+- **FR-004**: In check mode, before the copy of the environment is
+  concretized, every file and directory that `spack.yaml` names by a relative
+  path under `include:` or in a `develop:` package MUST be copied into the
+  copy at the same relative place, when that place is inside the
+  environment's directory. A relative path that leads above it MUST be named
+  in the module's result (and the preview made without it). Nothing of the
+  real environment changes.
 - **FR-005**: Each behaviour this spec settles MUST be held by a test: a unit
   test against the stand-in `spack`, and, for what depends on Spack itself,
   an integration test against the real Spack 1.0.0, 1.1.0 and 1.2.0.

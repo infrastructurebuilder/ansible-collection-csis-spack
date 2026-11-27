@@ -13,7 +13,7 @@
 
 ## Requirement Completeness
 
-- [ ] No [NEEDS CLARIFICATION] markers remain
+- [x] No [NEEDS CLARIFICATION] markers remain
 - [x] Requirements are testable and unambiguous
 - [x] Success criteria are measurable
 - [x] Success criteria are technology-agnostic (no implementation details)
@@ -32,7 +32,7 @@
 ## Notes
 
 - Items marked incomplete require spec updates before `/speckit-clarify` or `/speckit-plan`
-- Two [NEEDS CLARIFICATION] markers (User Story 1 and 2, FR-002 and FR-004): document each limit, or remove it. They are asked of the operator.
+- The two [NEEDS CLARIFICATION] markers (FR-002, FR-004) were answered by the operator on 2026-11-27 and are recorded under Clarifications: both limits are removed, not only documented.
 - The spec names the collection's interface (modules, options, files), as this
   repository's specs do: for an Ansible collection that is what a site
   writes and reads, not an implementation detail. The readers are the
