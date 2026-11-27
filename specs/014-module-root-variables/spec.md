@@ -132,6 +132,12 @@ documentation to the behaviour.
   same tree whichever spelling it is given.
 - **Check mode**: the preview resolves the root the same way, and says that
   the files would be regenerated only when they would.
+- **Check mode, and `$env` elsewhere in the configuration** (found the same
+  day): spack-stack's environment also sets its install tree to
+  `$env/install`. The preview concretizes a copy of the environment, in which
+  `$env` is the copy's directory, so it sees nothing installed and reports
+  the whole environment as to be installed, after two applies that changed
+  nothing (`changed=2` in the Cloud Sandbox's check mode). FR-007.
 - **An existing stamp** (`csis_spack.modules.json`) written by an earlier
   version with the literal root: the first run after the fix regenerates
   once, reports it, and writes a correct stamp.
@@ -158,6 +164,10 @@ documentation to the behaviour.
   the second run reporting no change and regenerating nothing.
 - **FR-006**: The changelog MUST name the bug, the versions it was in (0.0.1
   to the last release before the fix), and what a site saw.
+- **FR-007**: In check mode, `spack_env` MUST see what the real environment
+  has installed when the environment's configuration names `$env` (an install
+  tree of `$env/install`): the preview of an installed, unchanged environment
+  reports no change.
 
 ### Key Entities
 
