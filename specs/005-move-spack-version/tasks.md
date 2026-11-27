@@ -114,9 +114,9 @@ moved aside, the move is made, and the site's other files are there.
 - [X] T018 [P] In `CHANGELOG.md`'s Unreleased section, `move` on `spack_checkout` and the `spack` step, and the not-previewed message's new wording
 - [X] T019 [P] In `plugins/modules/spack_checkout.py`, the documentation of `move` (FR-011): what a move does and keeps, off by default, the refusals, that it does not rebuild, that check mode does not contact the source, that `origin` becomes the source named, that `.git` keeps both versions' objects, that a move killed part-way can leave a hidden directory `.<name>.move-*` beside the path, which later runs ignore and a site may delete; an `EXAMPLES` entry with `move: true`; `moved_from` in `RETURN` ("returned: when a Spack was moved, or would be in check mode"); and the description's sentence "this module does not move a Spack to another version" changed to say it does so only with `move`
 - [X] T020 Run `just test`
-- [ ] T021 Run `/usr/local/bin/timeout 4200 just full-test` (about 55 minutes); fix what it finds and run it again until it passes
+- [X] T021 Run `/usr/local/bin/timeout 4200 just full-test` (about 55 minutes); fix what it finds and run it again until it passes
 - [X] T022 Check every FR-001–FR-011 and SC-001–SC-006 of [spec.md](spec.md), and the scenarios of [quickstart.md](quickstart.md), against a test named above; add any that is missing, and run `just unit -k move`
-- [ ] T023 Set the Status line of `specs/005-move-spack-version/spec.md` (done, the date, `just test` and `just full-test` passing, not released) and spec 005's row of `specs/README.md` (State, Tasks: 23). Commit
+- [X] T023 Set the Status line of `specs/005-move-spack-version/spec.md` (done, the date, `just test` and `just full-test` passing, not released) and spec 005's row of `specs/README.md` (State, Tasks: 23). Commit
 
 ---
 

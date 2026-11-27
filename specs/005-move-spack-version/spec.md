@@ -4,10 +4,10 @@
 
 **Created**: 2026-11-25
 
-**Status**: Draft. Needs spec 004
-([specs/004-install-spack/](../004-install-spack/spec.md)), which this spec
-changes; 004 was merged into `develop` on 2026-11-26 and merged into this
-branch the same day.
+**Status**: Done 2026-11-26 on `feature/move-spack-version`: `just test` (345
+tests) and `just full-test` pass. Not merged, not released. It changes spec
+004's install step ([specs/004-install-spack/](../004-install-spack/spec.md)),
+merged into this branch on 2026-11-26
 
 **Input**: The operator, answering spec 004's question about a Spack already
 at the destination at another version: "Q2: A", fail and change nothing,
