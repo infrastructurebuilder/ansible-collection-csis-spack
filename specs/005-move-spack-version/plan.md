@@ -47,8 +47,10 @@ against `tests/unit/spack_source.py`'s repositories, which gain a
 and one option to one step kind
 
 **Performance Goals**: a move costs one shallow clone of the new version
-(about 6 MB from GitHub, R3 of 004) and one local fetch; a run with the
-option on and the Spack at the version costs nothing more than spec 004's
+(about 6 MB from GitHub, R3 of 004), one local fetch, and one existence
+check per file the new version adds (a few thousand at most, whatever the
+size of the site's install tree); a run with the option on and the Spack at
+the version costs nothing more than spec 004's
 
 **Constraints**: with `move` off, everything spec 004 does is unchanged; no
 file a site added is lost and no file a site edited is overwritten; nothing
@@ -114,10 +116,16 @@ nothing at the path has changed before step 5:
 3. **Check the staged version**: its `bin/spack --version` must be 1.0 or
    later, with 004's `Installer.check()` (spec edge case: refused before the
    Spack there is changed).
-4. **Compare**: the staged version's files (`git -C <stage> ls-tree -r
-   --name-only HEAD`) against the files at the path that git does not track
-   (`git -C <path> ls-files --others`, and the same with `--ignored
-   --exclude-standard`); any name in both refuses, naming them (FR-006, R2).
+4. **Compare**: the files the new version tracks and the current one does
+   not (`git -C <stage> ls-tree -r --name-only HEAD`, less `git -C <path>
+   ls-tree -r --name-only HEAD`). For each, if something exists at that place
+   in the path, or a file (not a directory) exists at one of its parent
+   directories, the move is refused, naming them (FR-006, R2). The check is
+   as large as Spack's own file list, a few thousand names, not as large as
+   what the site keeps (an install tree under `opt/` can hold hundreds of
+   thousands of files, which `git ls-files --others` would walk). A site's
+   file where the new version has a directory is caught by the second test;
+   git would refuse it, or, for an ignored file, remove it.
 5. **Move**: fetch from the staged copy into the path (`git -C <path> fetch
    --quiet --depth 1 file://<stage> <ref>`: `refs/tags/<v>:refs/tags/<v>`
    for a tag, `refs/heads/<b>:refs/remotes/origin/<b>` for a branch, the

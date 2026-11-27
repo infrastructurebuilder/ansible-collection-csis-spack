@@ -47,12 +47,14 @@ files as expendable. An untracked file that is not ignored stops a checkout
 instead ("would be overwritten"), and the site's other files
 (`etc/spack/config.yaml`, `opt/spack/…`, a note at the top) were kept.
 
-**Decision:** before anything at the path changes, the move lists the files
-the new version tracks and the files at the path that git does not track
-(`git ls-files --others`, ignored ones included). If any name is in both,
-the move is refused with nothing changed, naming the files (spec FR-006:
-every file a site added is kept). This needs the new version's file list
-before the move: see R3.
+**Decision:** before anything at the path changes, the move takes the files
+the new version tracks and the current one does not, and looks at the path
+for each: something already at that place, or a file at one of its parent
+directories, is the site's, and the move is refused with nothing changed,
+naming them (spec FR-006: every file a site added is kept). This is sized by
+Spack's own file list, not by the site's install tree, which `git ls-files
+--others` would have to walk (settled by `/speckit-analyze`, P1). It needs
+the new version's file list before the move: see R3.
 
 ## R3. The new version is staged beside the path first
 

@@ -34,7 +34,7 @@ All as argument lists; no shell. `<stage>` is a new directory
 | Edited files | `git -C <path> status --porcelain --untracked-files=no` |
 | Stage | as spec 004's install, into `<stage>` |
 | Staged version | `<stage>/bin/spack --version` |
-| Compare | `git -C <stage> ls-tree -r --name-only HEAD`; `git -C <path> ls-files --others`; `git -C <path> ls-files --others --ignored --exclude-standard` |
+| Compare | `git -C <stage> ls-tree -r --name-only HEAD`; `git -C <path> ls-tree -r --name-only HEAD`; then, for each file only the new version tracks, whether it, or a file at one of its parent directories, exists at the path (no command: the module looks) |
 | Kind of version | `git -C <stage> symbolic-ref -q HEAD` (a branch if it succeeds) |
 | Fetch, tag | `git -C <path> fetch --quiet --depth 1 file://<stage> refs/tags/<v>:refs/tags/<v>` |
 | Fetch, branch | `git -C <path> fetch --quiet --depth 1 file://<stage> refs/heads/<b>:refs/remotes/origin/<b>` |

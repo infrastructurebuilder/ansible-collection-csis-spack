@@ -37,8 +37,9 @@ spack at another version
   (the staged copy is removed in every case)
 ```
 
-A site's files are those at the path that git does not track:
-`git ls-files --others`, with ignored ones included. Edited files are
+A site's file that the new version would overwrite is anything at the
+place of a file the new version tracks and the current one does not, or a
+file at one of that file's parent directories. Edited files are
 Spack's own files that differ from HEAD: `git status --porcelain
 --untracked-files=no`.
 
