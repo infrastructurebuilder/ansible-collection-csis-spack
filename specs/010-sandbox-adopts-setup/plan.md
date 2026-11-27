@@ -6,7 +6,8 @@
 
 **Note**: This plan is a retrospective. The work was planned and done on
 2026-11-14, before this repository adopted Spec Kit, and the plan is written
-down from the collection's stage file. Nothing in it remains to be done.
+down from the collection's stage file. Nothing in it remains to be done but
+T029, a test of FR-005 added after `/speckit-converge` on 2026-11-27.
 
 ## Summary
 

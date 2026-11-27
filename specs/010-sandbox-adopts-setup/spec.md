@@ -15,6 +15,10 @@ nothing was merged or pushed. 0.3.0 was later withdrawn, and the first
 release was 0.0.1 (see Assumptions); the Cloud Sandbox has installed the
 collection from Ansible Galaxy since 2026-11-19
 ([specs/001-galaxy-publish/](../001-galaxy-publish/spec.md), Outcome).
+On 2026-11-27 a convergence task (T029) added tests of FR-005 to this
+repository, which found that a plain tagged `include_role` runs no step
+under `--tags`; FR-005 and research R3 now say which ways of including the
+role carry every step.
 
 **Input**: Collection stage 3, "the Cloud Sandbox moves to 0.3.0", planned
 on 2026-11-14 and executed the same day on the operator's "do coll 3".
@@ -171,8 +175,10 @@ step run, as that user.
 
 **Acceptance Scenarios**:
 
-1. **Given** the role included from a tagged role, **When** the play is run
-   with that role's tag, **Then** every step of the list runs.
+1. **Given** the role included with `apply: {tags: [...]}`, or imported with
+   `import_role`, from a task carrying the tag, **When** the play is run with
+   that tag, **Then** every step of the list runs. (With a plain
+   `include_role` on a tagged task, none does: research R3.)
 2. **Given** the role included with `apply: {become: true, become_user:
    "{{ sandbox_user }}"}`, **When** it is applied, **Then** every step runs
    as that user.
@@ -249,10 +255,16 @@ repository, and recorded there.
   without its environment fails loudly.
 - **FR-004** *(Collection)*: `spack_env`'s `refresh_modules` MUST offer
   `when_needed`, the default, and `always`.
-- **FR-005** *(Collection)*: When the role is included from a tagged role
-  and the play runs with that tag, every step MUST run; when it is included
-  with `apply: {become: true, become_user: ...}`, every step MUST run as
-  that user. The role needs nothing of its own for either (R3, R4).
+- **FR-005** *(Collection)*: When the role is included with
+  `apply: {tags: [...]}` (and the including task carries the tag), or
+  imported with `import_role` from a tagged task, and the play runs with that
+  tag, every step MUST run. When it is included with `apply:`, what `apply`
+  gives (an `environment`, `become` and `become_user`) MUST reach every step.
+  The role needs nothing of its own for either (R3, R4). A plain
+  `include_role` on a tagged task runs none of the role's steps under
+  `--tags`: Ansible gives an include's tags to the include, not to what it
+  includes; this is Ansible's rule, not the role's, and the role's
+  documentation says how to include it (spec 013).
 - **FR-006** *(Collection)*: A second application of the same lists MUST
   change nothing and report no change, and an application in check mode
   afterwards MUST report no change.

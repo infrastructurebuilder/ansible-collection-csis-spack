@@ -41,25 +41,49 @@ first list names no scope. (Today:
 
 ## R3. `--tags`, with the role included from a tagged role
 
-Tried first, before the sandbox's roles were changed: the sandbox includes
-the `setup` role from its own `spack` and `intel_oneapi` roles, which are
-tagged, and runs its play with `--tags`. The tags of the including task
-reach the role's own includes (today, its `include_tasks` of
-[roles/setup/tasks/step.yml](../../roles/setup/tasks/step.yml) and of each
-kind's file), so every step ran.
+Tried first, on 2026-11-14, before the sandbox's roles were changed: the
+sandbox includes the `setup` role from its own `spack` and `intel_oneapi`
+roles, which are tagged, and runs its play with `--tags`. Every step ran.
+The stage file does not record how the include was written.
 
-**Decision:** the role needs no tags of its own. (The role's README does
-not say this today.)
+Tried again on 2026-11-27, by the tests of T029
+([tests/unit/test_setup_role.py](../../tests/unit/test_setup_role.py)),
+against the stand-in `spack`, with a `config` step and a `mirror` step and
+the play run with `--tags spack`:
+
+| How the role is included | Its steps under `--tags spack` |
+| --- | --- |
+| `include_role` with `apply: {tags: [spack]}`, the task tagged `spack` | all run |
+| `import_role` on a task tagged `spack` | all run |
+| `include_role` on a task tagged `spack`, no `apply` | **none runs**: not even the role's first task |
+
+The last is Ansible's rule: the tags of an `include_*` task are the
+include's own, and reach the included tasks only through `apply`. An import
+is static, so its tags reach every task of the role, and the role's own
+`include_tasks` of `step.yml` and of each kind's file carry them on.
+
+**Decision:** the role needs no tags of its own. Tagging its tasks `always`
+would make them run under any `--tags`, also when the site's tag excludes
+the role. A site includes it with `apply: {tags: [...]}` or imports it; the
+role's README is to say so (spec 013).
 
 ## R4. `apply: {become: true, become_user: ...}`
 
 The sandbox includes the role with
 `apply: {become: true, become_user: "{{ sandbox_user }}"}`, so that its
-Spack is set up as the login user. Every step ran as that user.
+Spack is set up as the login user. Every step ran as that user (2026-11-14,
+in the sandbox's container).
+
+Tried again on 2026-11-27 by the tests of T029, as far as this repository
+can: a play includes the role with `apply: {environment: {CSIS_APPLIED:
+"yes"}}`, and a recording `spack` sees `CSIS_APPLIED=yes` in every Spack
+call of every step. So what `apply` gives reaches every step. Becoming
+another user is then Ansible's own `become`, which these tests do not
+re-prove: it needs a second user and a `become` that asks no password on the
+test machine.
 
 **Decision:** becoming another user is the site's, given on the
-`include_role`; the role adds nothing for it. (The role's README does not
-say this today.)
+`include_role`; the role adds nothing for it.
 
 ## R5. The real oneAPI, in the sandbox's container test
 

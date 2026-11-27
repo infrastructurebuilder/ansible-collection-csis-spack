@@ -17,7 +17,8 @@ the stage file records it done. Where the work went otherwise than
 planned, the task says what was done. Where only Cloud-Sandbox's
 `INPROGRESS/STAGE-11.md` holds the result, the task says so.
 
-**Tests**: no test of this repository changed. The tests that proved the
+**Tests**: no test of this repository changed in 2026-11, but T029 (2026-11-27),
+which added tests of FR-005. The tests that proved the
 work are Cloud-Sandbox's.
 
 ## Format: `[ID] [P?] [Story] Description`
@@ -103,4 +104,4 @@ else can use 0.3.0.)
 
 ## Phase 7: Convergence
 
-- [ ] T029 Hold FR-005 with tests in `tests/unit/test_setup_role.py`, through a play that includes the role with `ansible.builtin.include_role` from a task (not with `import_role`): (1) **tags**: the including task tagged `spack`, the play run with `--tags spack`, and a list of a `config` step and a `mirror` step against the stand-in `spack`: both steps are carried out (the stand-in records a `config add` and a `mirror add` call, and the scope and mirror hold what the steps say) and `spack_setup_results` has two entries; (2) **apply**: the role included with `apply: {environment: {CSIS_APPLIED: "yes"}}` (a keyword with no side effect), and the stand-in recording the environment it was run in: every Spack call of every step saw `CSIS_APPLIED=yes`. Switching user with `apply: {become: true, become_user: ...}` is Ansible's own `become`, which these tests do not re-prove (it needs a second user and a password-less become on the test machine): record that in `specs/010-sandbox-adopts-setup/research.md` R4, with what the tests do prove (that `apply:` reaches every step), per FR-005 (partial)
+- [X] T029 Hold FR-005 with tests in `tests/unit/test_setup_role.py`, through a play that includes the role with `ansible.builtin.include_role` from a task (not with `import_role`): (1) **tags**: the including task tagged `spack`, the play run with `--tags spack`, and a list of a `config` step and a `mirror` step against the stand-in `spack`: both steps are carried out (the stand-in records a `config add` and a `mirror add` call, and the scope and mirror hold what the steps say) and `spack_setup_results` has two entries; (2) **apply**: the role included with `apply: {environment: {CSIS_APPLIED: "yes"}}` (a keyword with no side effect), and the stand-in recording the environment it was run in: every Spack call of every step saw `CSIS_APPLIED=yes`. Switching user with `apply: {become: true, become_user: ...}` is Ansible's own `become`, which these tests do not re-prove (it needs a second user and a password-less become on the test machine): record that in `specs/010-sandbox-adopts-setup/research.md` R4, with what the tests do prove (that `apply:` reaches every step), per FR-005 (partial)
