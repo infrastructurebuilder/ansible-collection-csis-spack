@@ -172,8 +172,8 @@ inventory starts from:
   T029 (2026-11-27) added the tests: under `--tags`, `include_role` with
   `apply: {tags: [...]}`, or `import_role`, carries every step, but a plain
   `include_role` on a tagged task runs none (Ansible's rule); and what
-  `apply` gives reaches every step. The role's README must say which forms
-  to use, and why.
+  `apply` gives reaches every step. **Done** by spec 010's T030: the role's
+  README has "Including it from a play".
 - `docs/examples/cloud-sandbox.yml` sets two settings in the user scope, as
   the sandbox's script did, though the sandbox itself chose the site scope;
   the example does not say why (spec 010).
