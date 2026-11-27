@@ -15,8 +15,9 @@ description:
   - Runs C(spack buildcache push) for an environment, so that what it built
     can be installed elsewhere from the mirror instead of being built again.
   - Reports a change only when a package was pushed that the mirror did not
-    have, or that I(force) overwrote. Rebuilding the mirror's index
-    (I(update_index)) alone is not reported as a change.
+    have, or that I(force) overwrote. With I(update_index), Spack rebuilds
+    the mirror's index only after a push that sent something, so a run with
+    nothing to push leaves the index alone and reports no change.
   - What was pushed is learned from the mirror, not from what Spack prints.
     C(spack buildcache check) is asked before and after which of the
     environment's packages the mirror lacks.

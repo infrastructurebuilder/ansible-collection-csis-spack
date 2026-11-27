@@ -379,6 +379,24 @@ def test_a_preview_reads_relative_includes_where_they_are(
     again = run_module("spack_env", args, env=spack_env, check=True)
     assert (again["failed"], again["concretized"]) == (False, False), again.get("msg")
 
+    # An include under ~, which Spack expands, and a develop entry with no path, which
+    # Spack takes as the package's name in the environment's directory (spec 006, T020, T021).
+    home = tmp_path / "home"
+    home.mkdir()
+    (home / "csis-site.yaml").write_text("config:\n  build_jobs: 4\n")
+    (env / "zlib").mkdir()
+    (env / "spack.yaml").write_text(
+        "spack:\n  specs: [zlib]\n  view: false\n"
+        + store
+        + "  include:\n  - ~/csis-site.yaml\n"
+        + "  develop:\n    zlib:\n      spec: zlib@=1.3.1\n"
+    )
+    at_home = spack_env | {"HOME": str(home)}
+    real = run_module("spack_env", args, env=at_home)
+    assert (real["failed"], real["concretized"]) == (False, True), real.get("msg")
+    again = run_module("spack_env", args, env=at_home, check=True)
+    assert (again["failed"], again["concretized"]) == (False, False), again.get("msg")
+
     missing = tmp_path / "missing" / "env"
     missing.mkdir(parents=True)
     (missing / "spack.yaml").write_text(
