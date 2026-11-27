@@ -30,6 +30,12 @@ description:
     of its specs are not installed. Nothing is installed, and the environment
     itself is not touched. Module files are reported as changing only when
     that is certain, when a root is missing or a file was changed by hand.
+  - In check mode, paths that C(spack.yaml) gives relatively, in C(include:)
+    and in C(develop:), are read where they are, also above the environment's
+    directory; the preview records the same develop paths a real run would.
+    A develop source above the environment is not copied (one inside it is
+    copied with the directory), and the preview records its real path either
+    way.
   - Spack is run without a shell. What it needs around it, such as loaded
     environment modules, is given with the task's C(environment) keyword.
   - Needs Spack 1.0 or later.
@@ -229,6 +235,47 @@ MODULES_STATE_VERSION = 1
 # Reasons after which regenerating is certain to change files.
 CERTAIN = ("missing_root", "files_changed")
 
+# Run by "spack python <this> <copy's spack.yaml> <real directory>" in check
+# mode: the copy's relative include: and develop: paths become the absolute
+# paths they name from the real environment, so that the preview reads and
+# records what a real run would (spec 006). Absolute paths, paths with a $
+# (Spack's own variables) and an include with no path (a git include) are
+# left as they are. In Spack's Python, with Spack's YAML: the node may lack
+# PyYAML, and "spack python -c" takes no arguments.
+REWRITE = """\
+import os
+import sys
+
+import spack.util.spack_yaml as syaml
+
+manifest, origin = sys.argv[1], sys.argv[2]
+
+
+def absolute(path):
+    if os.path.isabs(path) or "$" in path:
+        return path
+    return os.path.normpath(os.path.join(origin, path))
+
+
+with open(manifest) as handle:
+    data = syaml.load(handle)
+env = data.get("spack") or {}
+includes = []
+for entry in env.get("include") or []:
+    if isinstance(entry, str):
+        entry = absolute(entry)
+    elif isinstance(entry, dict) and isinstance(entry.get("path"), str):
+        entry["path"] = absolute(entry["path"])
+    includes.append(entry)
+if "include" in env:
+    env["include"] = includes
+for entry in (env.get("develop") or {}).values():
+    if isinstance(entry, dict) and isinstance(entry.get("path"), str):
+        entry["path"] = absolute(entry["path"])
+with open(manifest, "w") as handle:
+    syaml.dump(data, handle)
+"""
+
 
 def concretize(spack, path, fresh):
     args = ["concretize", "--force", "-q"]
@@ -277,6 +324,19 @@ def refresh_reason(params, path, result, config, roots):
     return "not_needed"
 
 
+def rewrite_paths(spack, scratch, copy, path):
+    """Make the copy's relative include: and develop: paths name the real environment's files."""
+    manifest = os.path.join(copy, "spack.yaml")
+    with open(manifest) as handle:
+        text = handle.read()
+    if "include:" not in text and "develop:" not in text:
+        return
+    script = os.path.join(scratch, "rewrite.py")
+    with open(script, "w") as handle:
+        handle.write(REWRITE)
+    spack.run(["python", script, manifest, path])
+
+
 def check(module, spack, params, result):
     """Concretize a copy of the environment and say what would change."""
     path = params["path"]
@@ -284,6 +344,7 @@ def check(module, spack, params, result):
     try:
         copy = os.path.join(scratch, "env")
         shutil.copytree(path, copy, ignore=shutil.ignore_patterns(".spack-env", "log.*"))
+        rewrite_paths(spack, scratch, copy, path)
         concretize(spack, copy, params["fresh"])
         result["concretized"] = file_digest(os.path.join(copy, "spack.lock")) != file_digest(
             os.path.join(path, "spack.lock")

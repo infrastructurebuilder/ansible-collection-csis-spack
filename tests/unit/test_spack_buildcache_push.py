@@ -264,3 +264,16 @@ def test_without_yes_to_all_a_push_reads_no_help(spack: Spack) -> None:
     installed(spack)
     spack.module("spack_buildcache_push", env=str(spack.env), mirror="/srv/mirror", unsigned=True)
     assert helps(spack) == []
+
+
+def test_update_index_says_when_the_index_is_rebuilt() -> None:
+    """Spec 006: Spack rebuilds the index only after a push that sent something."""
+    from runner import ROOT
+
+    source = (ROOT / "plugins" / "modules" / "spack_buildcache_push.py").read_text()
+    documentation = source.split('DOCUMENTATION = r"""', 1)[1].split('"""', 1)[0]
+    import yaml
+
+    text = " ".join(yaml.safe_load(documentation)["options"]["update_index"]["description"])
+    assert "only after a push that sent something" in text
+    assert "spack buildcache update-index" in text

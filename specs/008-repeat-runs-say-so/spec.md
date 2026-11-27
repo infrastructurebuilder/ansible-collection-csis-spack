@@ -374,11 +374,16 @@ task's output.
   did without a line changing there; that work was to set `refresh_modules`
   in the role's `spack_env` task explicitly and say why.
 - **Known limitations, still open in 0.0.4**, taken up by spec 006
-  ([specs/006-known-limits/](../006-known-limits/spec.md), being written):
+  ([specs/006-known-limits/](../006-known-limits/spec.md), done, not yet released):
   - `update_index: true` rebuilds the mirror's index on every run, and does
     not report it as a change.
   - Check mode's copy of the environment, made in a temporary directory, does
     not find files that `spack.yaml` names by a relative path (`include:`,
     `develop:`).
+  - Spec 006 found the first not to be a limit: Spack rebuilds the index
+    only after a push that sent something (its research, R1), and that is
+    now documented and tested. It removed the second: the preview's copy now
+    reads relative `include:` and `develop:` paths where they are (its
+    FR-004).
 - **Testing against Spack versions other than v1.2.0.** Out of scope then;
   done later by spec 003.

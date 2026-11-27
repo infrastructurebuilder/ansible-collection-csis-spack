@@ -1,5 +1,29 @@
 # Changelog
 
+## Unreleased
+
+[specs/006-known-limits](specs/006-known-limits/spec.md). Nothing a
+playbook passes changes.
+
+### Fixed
+
+- `spack_env` in check mode reads the paths that `spack.yaml` gives
+  relatively, in `include:` and in `develop:`, where they are. Before, the
+  preview's copy failed on an include above the environment's directory
+  ("Required path ... does not exist"), and recorded the copy's own path for
+  a develop package, so it said the environment would concretize when a real
+  run would not. The copy's relative paths are now rewritten to the real
+  environment's absolute paths, with Spack's own Python, before it is
+  concretized; a `spack.yaml` with neither key is previewed as before.
+
+### Documented
+
+- `spack_buildcache_push`'s `update_index`: Spack rebuilds the mirror's
+  index only after a push that sent something, so a repeat run changes
+  nothing. An index changed by other means is not put right by such a run;
+  run `spack buildcache update-index` for that, in a `command` step. Tried
+  against Spack 1.0.0, 1.1.0 and 1.2.0, and held by a test against each.
+
 ## 0.0.4 (2026-11-27)
 
 [specs/004-install-spack](specs/004-install-spack/spec.md) and

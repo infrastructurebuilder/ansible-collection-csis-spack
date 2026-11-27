@@ -68,7 +68,13 @@ options:
     default: false
   update_index:
     description:
-      - Rebuild the mirror's index after pushing.
+      - Rebuild the mirror's index after a push. Spack rebuilds it only after
+        a push that sent something; when nothing was pushed it leaves the
+        index as it is, so a repeat run changes nothing.
+      - An index changed by other means (a mirror edited by hand, a push from
+        elsewhere without this option) is therefore not put right by a run
+        with nothing to push. Run C(spack buildcache update-index) for that,
+        for example in a C(command) step of the C(setup) role.
     type: bool
     default: false
   only:
