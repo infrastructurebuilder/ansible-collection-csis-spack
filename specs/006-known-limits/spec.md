@@ -12,6 +12,16 @@ limitations." The two limits were recorded on 2026-11-14 as out of scope in
 the plan of the work that made repeat runs do nothing and say so (spec 008,
 the retrospective of that work), and are true of the code today.
 
+## Clarifications
+
+### Session 2026-11-27
+
+- Q: When `spack_buildcache_push` runs with `update_index: true` and there is
+  nothing new to push, should it still rebuild the mirror's index? → A: No.
+  The index is rebuilt only after a push that sent something, so a repeat
+  run changes nothing. An index that drifted by other means is not put right
+  by an ordinary run.
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - A site that rebuilds a mirror's index knows what each run does (Priority: P1)
@@ -36,10 +46,11 @@ what it does is what the documentation says.
 
 1. **Given** an environment already pushed to a mirror, **When**
    `spack_buildcache_push` runs again with `update_index: true`, **Then**
-   what happens to the mirror's index, and what the task reports, is
-   [NEEDS CLARIFICATION: is the limit only documented (the index is rebuilt
-   on every run and that is not reported), or removed (the index is rebuilt
-   only when a package was pushed, so a repeat run changes nothing)?].
+   nothing is pushed, the mirror's index is not rebuilt, and the task
+   reports no change.
+3. **Given** an environment with a package the mirror lacks, **When**
+   `spack_buildcache_push` runs with `update_index: true`, **Then** the
+   package is pushed, the index is rebuilt, and a change is reported.
 2. **Given** the module's documentation, **When** a site reads
    `update_index`, **Then** it says what a run with nothing to push does to
    the index.
@@ -83,8 +94,12 @@ the documentation says it is.
   from the copy, and is not this spec's concern.
 - **A relative path that points outside the environment's directory**
   (`../shared.yaml`): it is named by the same rule as any relative path.
-- **`update_index: true` with `force`**: a forced push is a change whatever
-  happens to the index; the index's rebuild follows the push, as today.
+- **`update_index: true` with `force`**: a forced push is a push, so the
+  index is rebuilt after it, as today.
+- **An index that drifted** (a mirror edited by hand, a push from elsewhere
+  without `--update-index`): a run with nothing to push leaves it as it is.
+  A site that wants it rebuilt runs `spack buildcache update-index` itself,
+  for example in a `command` step.
 - **A mirror that cannot be written to**: as today, the push fails.
 
 ## Requirements *(mandatory)*
@@ -94,9 +109,10 @@ the documentation says it is.
 - **FR-001**: `spack_buildcache_push`'s documentation of `update_index` MUST
   say what a run does to the mirror's index when nothing is pushed, and
   whether that is reported.
-- **FR-002**: With `update_index: true`, a repeat run with nothing to push
-  MUST [NEEDS CLARIFICATION: see User Story 1, scenario 1: be documented as
-  rebuilding the index unreported, or not rebuild it].
+- **FR-002**: With `update_index: true`, a run with nothing to push MUST NOT
+  rebuild the mirror's index; a run that pushes something MUST rebuild it, as
+  today. The documentation of `update_index` MUST say that an index changed
+  by other means is not put right by a run with nothing to push.
 - **FR-003**: `spack_env`'s documentation of check mode MUST say what the
   preview sees of files that `spack.yaml` names by a relative path, and what
   a site with such an environment should do.
