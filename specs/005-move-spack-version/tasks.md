@@ -144,3 +144,7 @@ T007 tests/integration/test_real_spack.py
 - **Then** US2, which makes a move safe for what a site keeps.
 - **Done** when T021 passes and T023 is committed; merging into `develop`
   waits for the operator's word, then `/speckit-converge`.
+
+## Phase 6: Convergence
+
+- [ ] T024 Record in `specs/005-move-spack-version/contracts/interface.md` ("What a move runs": the Fetch, tag and Fetch, branch rows, and the Origin row) and in `specs/005-move-spack-version/plan.md` ("The module", step 5) the two things `plugins/modules/spack_checkout.py` does beyond them: its tag and branch fetches force-update the local ref (`+refs/tags/<v>:refs/tags/<v>`, `+refs/heads/<b>:refs/remotes/origin/<b>`), so that a tag of that name fetched from the source now named replaces one an earlier source left; and when the Spack has no `origin`, `git remote set-url` is followed by `git remote add origin <source>`. Or remove them from the module per plan: The module, step 5; contracts: What a move runs (unrequested)
