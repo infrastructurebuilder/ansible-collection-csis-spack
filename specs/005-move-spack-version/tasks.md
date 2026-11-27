@@ -35,7 +35,7 @@ result key `moved_from`.
 
 ## Phase 1: Setup
 
-- [ ] T001 On `feature/move-spack-version`, run `just test` at the repository root and see it pass (326 tests after spec 004), so that later failures are the new tests'
+- [X] T001 On `feature/move-spack-version`, run `just test` at the repository root and see it pass (326 tests after spec 004), so that later failures are the new tests'
 
 ---
 
@@ -46,9 +46,9 @@ repositories, which must hold what research R2 found (a file one version
 tracks where an earlier one leaves room for the site's), and both need
 `move` to be an option the role and the module accept.
 
-- [ ] T002 In `tests/unit/spack_source.py`, give every commit a tracked `.gitignore` of `/opt` and `/etc/site/*`; at `v1.2.0` and on the branch `releases/v1.2`, also track `etc/site/README.md` ("Spack's own site README"), un-ignored by `!/etc/site/README.md` in that version's `.gitignore`, as Spack 1.2 does with `etc/spack/site/README.md` (research R2). Say so in the module docstring. Spec 004's tests must still pass unchanged: run `just unit tests/unit/test_spack_checkout.py tests/unit/test_setup_role.py tests/unit/test_examples.py`
-- [ ] T003 [P] In `tests/unit/test_setup_filter.py`, a test that `move` is an option of the `spack` kind (`setup_problems([{"kind": "spack", "version": "v1.2.0", "path": "/opt/spack", "move": True}]) == []`); run `just unit tests/unit/test_setup_filter.py` and see it fail, and the existing test that each kind's options are its module's options still pass
-- [ ] T004 In `plugins/filter/setup_problems.py`, add `move` to `KINDS["spack"]["optional"]`. In `plugins/modules/spack_checkout.py`, add the option `move` (`type="bool"`, `default=False`) to the argument spec and to `DOCUMENTATION` (`version_added: 0.0.4`; "Only changes what happens when the path holds a Spack at another version"; the rest of its documentation is T019), with no behaviour yet. Run `just unit tests/unit/test_setup_filter.py`: T003 passes, and so does the options test. Commit
+- [X] T002 In `tests/unit/spack_source.py`, give every commit a tracked `.gitignore` of `/opt` and `/etc/site/*`; at `v1.2.0` and on the branch `releases/v1.2`, also track `etc/site/README.md` ("Spack's own site README"), un-ignored by `!/etc/site/README.md` in that version's `.gitignore`, as Spack 1.2 does with `etc/spack/site/README.md` (research R2). Say so in the module docstring. Spec 004's tests must still pass unchanged: run `just unit tests/unit/test_spack_checkout.py tests/unit/test_setup_role.py tests/unit/test_examples.py`
+- [X] T003 [P] In `tests/unit/test_setup_filter.py`, a test that `move` is an option of the `spack` kind (`setup_problems([{"kind": "spack", "version": "v1.2.0", "path": "/opt/spack", "move": True}]) == []`); run `just unit tests/unit/test_setup_filter.py` and see it fail, and the existing test that each kind's options are its module's options still pass
+- [X] T004 In `plugins/filter/setup_problems.py`, add `move` to `KINDS["spack"]["optional"]`. In `plugins/modules/spack_checkout.py`, add the option `move` (`type="bool"`, `default=False`) to the argument spec and to `DOCUMENTATION` (`version_added: 0.0.4`; "Only changes what happens when the path holds a Spack at another version"; the rest of its documentation is T019), with no behaviour yet. Run `just unit tests/unit/test_setup_filter.py`: T003 passes, and so does the options test. Commit
 
 **Checkpoint**: `move` is accepted and does nothing yet.
 

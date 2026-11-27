@@ -104,7 +104,8 @@ KINDS = {
     "spack": {
         "module": "spack_checkout",
         "required": ["version", "path"],
-        "optional": ["source"],
+        # move: spec 005, a Spack at another version moved to the one named.
+        "optional": ["source", "move"],
     },
 }
 # The role's executable when a site has not set it: plain spack, on PATH.

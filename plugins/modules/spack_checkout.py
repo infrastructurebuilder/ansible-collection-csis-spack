@@ -85,6 +85,13 @@ options:
         own git configuration. Use a git credential helper or an SSH key.
     type: str
     default: https://github.com/spack/spack.git
+  move:
+    description:
+      - Only changes what happens when the path holds a Spack at another
+        version.
+    type: bool
+    default: false
+    version_added: 0.0.4
 notes:
   - The C(setup) role carries this module out as its C(spack) step.
 seealso:
@@ -342,6 +349,7 @@ def main():
             version=dict(type="str", required=True),
             path=dict(type="path", required=True),
             source=dict(type="str", default="https://github.com/spack/spack.git"),
+            move=dict(type="bool", default=False),
         ),
         supports_check_mode=True,
     )

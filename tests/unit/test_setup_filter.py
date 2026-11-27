@@ -186,3 +186,8 @@ def test_setup_executable_gives_the_spack_the_later_steps_run() -> None:
 
 def test_a_spack_steps_label() -> None:
     assert setup_label(SPACK_STEP) == "spack: v1.2.0 at /opt/spack"
+
+
+def test_move_is_an_option_of_the_spack_kind() -> None:
+    """Spec 005: a spack step may allow a move to another version."""
+    assert setup_problems([SPACK_STEP | {"move": True}]) == []

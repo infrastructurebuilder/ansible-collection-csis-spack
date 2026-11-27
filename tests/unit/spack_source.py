@@ -8,6 +8,12 @@ a commit's hash in brackets. With ``runs``, ``bin/spack`` instead runs the
 stand-in ``spack`` with its arguments, so that a role test's later steps have
 a Spack to work on; with ``mark`` as well, it first touches that file, so a
 test can tell it was run.
+
+Like Spack's own, each version has a ``.gitignore`` that leaves room for a
+site's files (``/opt``, ``/etc/site/*``). From ``v1.2.0`` on it also tracks
+``etc/site/README.md``, a file an earlier version leaves to the site, as Spack
+1.2 does with ``etc/spack/site/README.md`` (specs/005-move-spack-version,
+research R2): moving a site's Spack to it must not overwrite the site's own.
 """
 
 from __future__ import annotations
@@ -28,6 +34,9 @@ GIT_ENV = {
     "GIT_COMMITTER_EMAIL": "test@example.org",
 }
 RELEASES = [("v0.23.0", "0.23.0"), ("v1.0.0", "1.0.0"), ("v1.2.0", "1.2.0")]
+# The versions that track etc/site/README.md (the branch is cut from v1.2.0).
+TRACK_SITE_README = {"1.2.0", "1.2.1.dev0"}
+IGNORED = "/opt\n/etc/site/*\n"
 BRANCH = ("releases/v1.2", "1.2.1.dev0")
 # What a real checkout prints after the version; any 40 hex digits will do.
 SHOWN_HASH = "63962ed90680d339004305075da272ae93c04a41"
@@ -67,6 +76,14 @@ def make_source(
         spack.write_text(program(version, runs, mark))
         spack.chmod(0o755)
         (repo / "README.md").write_text(f"Spack {version}, as a test makes it.\n")
+        site_readme = repo / "etc" / "site" / "README.md"
+        if version in TRACK_SITE_README:
+            (repo / ".gitignore").write_text(IGNORED + "!/etc/site/README.md\n")
+            site_readme.parent.mkdir(parents=True, exist_ok=True)
+            site_readme.write_text("Spack's own site README\n")
+        else:
+            (repo / ".gitignore").write_text(IGNORED)
+            site_readme.unlink(missing_ok=True)
         git("add", "--all", cwd=repo)
         git("commit", "--quiet", "--message", f"Spack {version}", cwd=repo)
         return git("rev-parse", "HEAD", cwd=repo)
