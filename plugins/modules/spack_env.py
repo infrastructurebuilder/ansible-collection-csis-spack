@@ -239,9 +239,12 @@ CERTAIN = ("missing_root", "files_changed")
 # mode: the copy's relative include: and develop: paths become the absolute
 # paths they name from the real environment, so that the preview reads and
 # records what a real run would (spec 006). Absolute paths, paths with a $
-# (Spack's own variables) and an include with no path (a git include) are
-# left as they are. In Spack's Python, with Spack's YAML: the node may lack
-# PyYAML, and "spack python -c" takes no arguments.
+# (Spack's own variables), paths under ~ (Spack expands them), URLs (Spack
+# fetches a remote include) and an include with no path (a git include) are
+# left as they are. A develop entry with no path is given the one Spack
+# defaults it to, its name in the environment's directory. In Spack's
+# Python, with Spack's YAML: the node may lack PyYAML, and "spack python -c"
+# takes no arguments.
 REWRITE = """\
 import os
 import sys
@@ -252,7 +255,7 @@ manifest, origin = sys.argv[1], sys.argv[2]
 
 
 def absolute(path):
-    if os.path.isabs(path) or "$" in path:
+    if os.path.isabs(path) or "$" in path or path.startswith("~") or "://" in path:
         return path
     return os.path.normpath(os.path.join(origin, path))
 
@@ -269,9 +272,9 @@ for entry in env.get("include") or []:
     includes.append(entry)
 if "include" in env:
     env["include"] = includes
-for entry in (env.get("develop") or {}).values():
-    if isinstance(entry, dict) and isinstance(entry.get("path"), str):
-        entry["path"] = absolute(entry["path"])
+for name, entry in (env.get("develop") or {}).items():
+    if isinstance(entry, dict):
+        entry["path"] = absolute(entry["path"] if isinstance(entry.get("path"), str) else name)
 with open(manifest, "w") as handle:
     syaml.dump(data, handle)
 """

@@ -340,6 +340,9 @@ RELATIVE = """spack:
     optional: true
   - /abs/x.yaml
   - $env/y.yaml
+  - ~/site.yaml
+  - path: https://example.org/c.yaml
+    sha256: abababababababababababababababababababababababababababababababab
   - git: https://git.example.org/c.git
     branch: main
     paths: [c.yaml]
@@ -350,6 +353,8 @@ RELATIVE = """spack:
     gmake:
       spec: gmake@=4.4.1
       path: /abs/gmake
+    cmake:
+      spec: cmake@=3.30.0
 """
 
 
@@ -367,10 +372,17 @@ def test_relative_paths_are_rewritten_in_the_copy_only(spack: Spack) -> None:
         {"path": f"{above}/opt.yaml", "optional": True},
         "/abs/x.yaml",
         "$env/y.yaml",
+        "~/site.yaml",
+        {
+            "path": "https://example.org/c.yaml",
+            "sha256": "abababababababababababababababababababababababababababababababab",
+        },
         {"git": "https://git.example.org/c.git", "branch": "main", "paths": ["c.yaml"]},
     ]
     assert previewed["develop"]["zlib"]["path"] == f"{above}/zlib-src"
     assert previewed["develop"]["gmake"]["path"] == "/abs/gmake"
+    # Spack's default for a develop entry with no path is its name, in the environment's directory.
+    assert previewed["develop"]["cmake"] == {"spec": "cmake@=3.30.0", "path": f"{spack.env}/cmake"}
     assert (spack.env / "spack.yaml").read_text() == RELATIVE
     calls = [call[0] for call in spack.state["calls"] if call[:1] in (["python"], ["-e"])]
     assert calls[0] == "python", spack.state["calls"]

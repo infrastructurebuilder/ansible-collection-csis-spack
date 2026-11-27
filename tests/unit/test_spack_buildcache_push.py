@@ -277,3 +277,7 @@ def test_update_index_says_when_the_index_is_rebuilt() -> None:
     text = " ".join(yaml.safe_load(documentation)["options"]["update_index"]["description"])
     assert "only after a push that sent something" in text
     assert "spack buildcache update-index" in text
+    # The description agrees: no index is rebuilt without a push (spec 006, T022).
+    described = " ".join(" ".join(yaml.safe_load(documentation)["description"]).split())
+    assert "alone is not reported as a change" not in described
+    assert "only after a push that sent something" in described
