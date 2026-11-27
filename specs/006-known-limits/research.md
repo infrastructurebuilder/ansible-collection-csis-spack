@@ -70,7 +70,9 @@ The copy's `spack.yaml` was rewritten so that each relative `include:` entry
 (a string, or the `path` of a mapping) and each `develop:` entry's `path`
 became the absolute path it names from the real environment's directory.
 Absolute paths, and paths with a `$` (Spack's own variables), were left as
-they were. The rewrite was done by Spack's own Python, `spack python
+they were. A mapping with no `path` is left as it is too: Spack 1.2's include
+schema also allows a git include, `{git: <url>, paths: [...]}`
+(`lib/spack/spack/schema/include.py`), which names no local path. The rewrite was done by Spack's own Python, `spack python
 <script> <copy's spack.yaml> <real environment's directory>`, with
 `spack.util.spack_yaml` to read and write the file:
 

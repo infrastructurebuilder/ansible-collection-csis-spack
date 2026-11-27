@@ -22,13 +22,16 @@ The rewrite changes, in the copy's `spack.yaml` only:
 | `develop: <pkg>: path:` | `../src` | `<parent of path>/src` |
 | any of these, absolute | `/opt/x.yaml` | unchanged |
 | any of these, with `$` | `$env/x.yaml` | unchanged |
+| `include:` mapping with no `path` | `{git: <url>, branch: main, paths: [a.yaml]}` | unchanged |
 
 ## Documentation
 
 - `spack_env`, the check-mode note: "Paths that `spack.yaml` gives
   relatively, in `include:` and in `develop:`, are read where they are, also
   above the environment's directory; the preview records the same develop
-  paths a real run would. A develop package's source is not copied."
+  paths a real run would. A develop source above the environment is not
+  copied (one inside it is copied with the directory), and the preview
+  records its real path either way."
 - `spack_buildcache_push`, `update_index`: "Rebuild the mirror's index after
   a push that sent something. Spack leaves the index as it is when nothing
   was pushed, so a repeat run changes nothing; an index changed by other

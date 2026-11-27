@@ -101,8 +101,9 @@ before `concretize`:
    loads the copy's `spack.yaml` with `spack.util.spack_yaml`, replaces each
    relative `include:` entry (a string, or a mapping's `path`) and each
    `develop:` entry's `path` with the absolute path it names from the real
-   environment's directory, leaves absolute paths and paths with `$` as they
-   are, and writes the file back.
+   environment's directory, leaves absolute paths, paths with `$`, and a
+   mapping with no `path` (a git include) as they are, and writes the file
+   back.
 2. Run it with `spack python <script> <copy>/spack.yaml <real directory>`, as
    an argument list, through the shared runner (no `-e`).
 3. Concretize the copy as today.
@@ -138,7 +139,9 @@ right by such a run (run `spack buildcache update-index` for that, in a
 
 - `spack_env`'s check-mode note: relative `include:` and `develop:` paths
   are read where they are, also above the environment's directory; a
-  `develop:` source tree is not copied.
+  develop source above the environment is not copied (one inside it is
+  copied with the directory, as today), and the preview records the real
+  path either way.
 - `spack_buildcache_push`'s `update_index`: as above.
 - `CHANGELOG.md`: the preview's paths; the index documented.
 - `specs/008-repeat-runs-say-so/spec.md`, Out of Scope: a note that spec 006

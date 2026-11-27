@@ -88,8 +88,8 @@ the run is worse than none. It is P2 because environments that use relative
 `include:` or `develop:` are fewer than those that do not.
 
 **Independent Test**: an environment whose `spack.yaml` includes
-`./extra.yaml`; run `spack_env` in check mode; see that the preview is what
-the documentation says it is.
+`../shared.yaml`, beside its directory; run `spack_env` in check mode; see
+the preview succeed, and report no change after a real concretize.
 
 **Acceptance Scenarios**:
 
@@ -116,8 +116,12 @@ the documentation says it is.
   (FR-004).
 - **A relative path that names nothing**: as for the real environment,
   Spack reports it; the preview does not invent it.
-- **A `develop:` source tree**: it is not copied; the preview names its
-  real path, as a real run does, and reads nothing of it.
+- **A `develop:` source tree**: one above the environment's directory is not
+  copied; one inside it is copied with the directory, as today. Either way
+  the preview records its real path, as a real run does.
+- **An `include:` that names no local path** (a git include, `{git: <url>,
+  paths: [...]}`): it is left as it is, for Spack to read as it would for
+  the real environment.
 - **`update_index: true` with `force`**: a forced push is a push, so the
   index is rebuilt after it, as today.
 - **An index that drifted** (a mirror edited by hand, a push from elsewhere
