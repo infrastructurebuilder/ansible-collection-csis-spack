@@ -20,9 +20,9 @@ description:
     directory, and Spack is installed and a change is reported. A Spack
     already at the version named is left alone and no change is reported,
     whether this module installed it or a person did. A Spack at another
-    version fails the task with nothing changed; this module does not move
-    a Spack to another version. Anything else (a file, a directory that is
-    not a Spack) fails the task with nothing changed.
+    version fails the task with nothing changed, unless O(move) is true, in
+    which case it is moved to the version named. Anything else (a file, a
+    directory that is not a Spack) fails the task with nothing changed.
   - A Spack at the version named whose own files have been edited is left
     alone too, and a warning names the edited files.
   - Whether a Spack is at the version named is decided without the network, so a repeat run
@@ -85,6 +85,35 @@ options:
         own git configuration. Use a git credential helper or an SSH key.
     type: str
     default: https://github.com/spack/spack.git
+  move:
+    description:
+      - Only changes what happens when O(path) holds a Spack at another
+        version. Off, the task fails with nothing changed. On, the Spack is
+        moved to O(version) in place, forward or back, and a change is
+        reported, with RV(moved_from) naming what was there.
+      - The new version is first cloned into a hidden directory beside
+        O(path), C(.<name>.move-*), and its C(spack --version) checked; only
+        then is it fetched from that copy into O(path) and checked out, and
+        the Spack's C(origin) set to O(source). A move killed part-way can
+        leave that directory behind; later runs ignore it, and it may be
+        deleted.
+      - Everything the site added is kept (its configuration under
+        C(etc/spack/), packages built under C(opt/), its environments). The
+        move is refused with nothing changed, naming the files, when Spack's
+        own files have been edited, or when the new version has a file where
+        the site added one, or a directory where the site has a file; git
+        would replace an ignored file there without a word. Move such files
+        aside and run again.
+      - Nothing the old version built is rebuilt, concretized again or
+        removed; environments may need that, by tasks of their own. Tasks
+        after a move run the new version. C(.git) keeps both versions'
+        objects.
+      - In check mode the move is reported and no source is contacted, so a
+        version not in the source, or a file in the way, is found only when
+        the move is made.
+    type: bool
+    default: false
+    version_added: 0.0.4
 notes:
   - The C(setup) role carries this module out as its C(spack) step.
 seealso:
@@ -104,6 +133,12 @@ EXAMPLES = r"""
     settings:
       config:
         build_jobs: 8
+
+- name: Move the Spack at /opt/spack to v1.2.0, whatever version it is at
+  infrastructurebuilder.csis_spack.spack_checkout:
+    version: v1.2.0
+    path: /opt/spack
+    move: true
 
 - name: Install it from a site's own mirror of Spack's repository, through a proxy
   infrastructurebuilder.csis_spack.spack_checkout:
@@ -141,6 +176,13 @@ spack_version:
     - What C(spack --version) printed, as C(1.2.0 (63962ed9...)). Not
       returned in check mode when Spack is not installed yet.
   returned: when Spack was run
+  type: str
+moved_from:
+  description:
+    - What was at O(path) before a move, the tag, branch or commit checked
+      out and what C(spack --version) printed, as
+      C(tag v1.1.0, where spack --version printed 1.1.0 (0c2be44e...)).
+  returned: when a Spack was moved, or would be in check mode
   type: str
 edited:
   description: Spack's own files at O(path) that differ from the version checked out.
@@ -257,6 +299,40 @@ def edited_files(git, real):
     return [line[3:] for line in out.splitlines() if len(line) > 3]
 
 
+def tracked(git, where):
+    """The files git tracks at HEAD in ``where``, as git names them."""
+    rc, out, err = git.module.run_command(
+        [git.executable, "-C", where, "ls-tree", "-r", "-z", "--name-only", "HEAD"],
+        environ_update=GIT_ENVIRONMENT,
+    )
+    if rc != 0:
+        raise CheckoutError("git ls-tree failed at %s: %s" % (where, err.strip()))
+    return {name for name in out.split("\0") if name}
+
+
+def overwritten(git, stage, real):
+    """The site's files at ``real`` that moving to the version at ``stage`` would overwrite.
+
+    Only the files the new version adds are looked at, so the check is as large
+    as Spack's own file list, not as large as a site's install tree (spec 005,
+    research R2). Something already at the place of one of them is the site's;
+    so is a file where the new version needs a directory.
+    """
+    found = set()
+    for name in sorted(tracked(git, stage) - tracked(git, real)):
+        if os.path.lexists(os.path.join(real, name)):
+            found.add(name)
+            continue
+        parts = name.split("/")[:-1]
+        for depth in range(1, len(parts) + 1):
+            prefix = "/".join(parts[:depth])
+            full = os.path.join(real, prefix)
+            if os.path.lexists(full) and not os.path.isdir(full):
+                found.add(prefix)
+                break
+    return sorted(found)
+
+
 def clone(git, source, version, target):
     """Fetch ``version`` of ``source`` into the empty directory ``target``."""
     if FULL_HASH.match(version):
@@ -326,6 +402,50 @@ class Installer:
             raise
         return printed
 
+    def move(self, source, version, real):
+        """Move the Spack at ``real`` to ``version``, in place (spec 005).
+
+        The version is cloned beside ``real`` first and checked there, so that
+        nothing at ``real`` changes until it is known to be there and to run;
+        it is then fetched from that copy into ``real`` and checked out, as
+        spec 004's install leaves a tag, a branch or a commit.
+        """
+        parent, name = os.path.split(real)
+        try:
+            stage = tempfile.mkdtemp(dir=parent, prefix=".%s.move-" % name)
+        except OSError as error:
+            raise CheckoutError(
+                "could not make a directory beside %s to move Spack: %s" % (real, error)
+            ) from error
+        try:
+            clone(self.git, source, version, stage)
+            self.check(stage)
+            in_the_way = overwritten(self.git, stage, real)
+            if in_the_way:
+                raise CheckoutError(
+                    "moving the Spack at %s to %s would overwrite these files of the site's, which %s "
+                    "has files of its own at: %s. Nothing was changed: move them aside and run again"
+                    % (real, version, version, ", ".join(in_the_way))
+                )
+            staged = "file://" + stage
+            if FULL_HASH.match(version):
+                self.git.must("-C", real, "fetch", "--quiet", "--depth", "1", staged, version)
+                self.git.must("-C", real, "checkout", "--quiet", "--detach", "FETCH_HEAD")
+            elif self.git.run("-C", stage, "symbolic-ref", "-q", "HEAD")[0] == 0:
+                remote = "refs/remotes/origin/%s" % version
+                self.git.must("-C", real, "fetch", "--quiet", "--depth", "1", staged,
+                              "+refs/heads/%s:%s" % (version, remote))  # fmt: skip
+                self.git.must("-C", real, "checkout", "--quiet", "-B", version, remote)
+            else:
+                tag = "refs/tags/%s" % version
+                self.git.must("-C", real, "fetch", "--quiet", "--depth", "1", staged, "+%s:%s" % (tag, tag))
+                self.git.must("-C", real, "checkout", "--quiet", "--detach", "%s^{commit}" % tag)
+            if self.git.run("-C", real, "remote", "set-url", "origin", source)[0] != 0:
+                self.git.must("-C", real, "remote", "add", "origin", source)
+            return self.check(real)
+        finally:
+            shutil.rmtree(stage, ignore_errors=True)
+
     def into_empty(self, source, version, real):
         """Install into the empty directory ``real``, in place."""
         try:
@@ -342,6 +462,7 @@ def main():
             version=dict(type="str", required=True),
             path=dict(type="path", required=True),
             source=dict(type="str", default="https://github.com/spack/spack.git"),
+            move=dict(type="bool", default=False),
         ),
         supports_check_mode=True,
     )
@@ -400,11 +521,29 @@ def main():
                     printed = installer.check(real)
                 except CheckoutError as error:
                     printed = "(it did not run: %s)" % error
-                raise CheckoutError(
-                    "%s holds Spack at another version: it is at %s, and spack --version prints %s; "
-                    "%s was asked for. Nothing was changed: this module does not move a Spack to "
-                    "another version" % (path, where, printed, version)
-                )
+                if not params["move"]:
+                    raise CheckoutError(
+                        "%s holds Spack at another version: it is at %s, and spack --version prints %s; "
+                        "%s was asked for. Nothing was changed: without move, this module does not move "
+                        "a Spack to another version" % (path, where, printed, version)
+                    )
+                result["moved_from"] = "%s, where spack --version printed %s" % (where, printed)
+                edited = edited_files(git, real)
+                if edited:
+                    raise CheckoutError(
+                        "the Spack at %s, at %s, has these of its own files edited: %s. Nothing was "
+                        "changed: a move would overwrite them" % (path, where, ", ".join(edited))
+                    )
+                result["changed"] = True
+                if module.check_mode:
+                    result["msg"] = (
+                        "would move the Spack at %s from %s to %s; whether %s is in the source, and "
+                        "whether the move would overwrite a file of the site's, are found only when the "
+                        "move is made" % (path, where, version, version)
+                    )
+                else:
+                    result["spack_version"] = installer.move(source, version, real)
+                module.exit_json(**result)
             result["spack_version"] = installer.check(real)
             result["edited"] = edited_files(git, real)
             if result["edited"]:
