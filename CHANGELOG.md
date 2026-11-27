@@ -16,11 +16,23 @@ before.
   directory in place). A Spack already at the version, however it got there:
   left alone, with no network needed, and a warning if its own files have
   been edited. A Spack at another version, or anything that is not a Spack:
-  the step fails with nothing changed; moving a Spack to another version is
-  not done. The installed Spack must report 1.0 or later. The node needs
+  the step fails with nothing changed, unless `move: true` is given (below).
+  The installed Spack must report 1.0 or later. The node needs
   `git` 2.18 or later; a source holding a credential is refused. Spack's
   package recipes are left to Spack, which fetches them when it first needs
   them.
+- `move` (off by default), on `spack_checkout` and the `spack` step
+  ([specs/005-move-spack-version](specs/005-move-spack-version/spec.md)): a
+  Spack at the path at another version is moved to the version named, in
+  place, forward or back, keeping everything the site added. The new version
+  is cloned beside the path and checked first; the move is refused, with
+  nothing changed, over Spack's own edited files or over a site's file the
+  new version would replace (which git itself would overwrite without a word
+  for an ignored file). `moved_from` names what was there. Nothing the old
+  version built is rebuilt. Check mode contacts no source.
+- In check mode the role's not-previewed message now reads "Spack is not
+  installed or moved yet: check mode does not change it, so this step cannot
+  be previewed".
 - The `spack` step can only be the list's first. The steps after it run the
   Spack it installed, `<path>/bin/spack`, so `spack_setup_executable` is not
   needed; set to another Spack, the role refuses the list. In check mode on

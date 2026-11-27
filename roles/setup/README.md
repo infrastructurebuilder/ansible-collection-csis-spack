@@ -71,7 +71,7 @@ asking for the key, or for the keys the mirrors publish, is the consent.
 | `detect` | `spack_detect` | Has Spack look for compilers and installed packages. Discovery: it depends on the machine and on the step's environment | `compilers`, `externals`, `not_buildable`, `exclude`, `paths`, `require`, `scope`, `yes_to_all` |
 | `command` | `spack_command` | Runs any Spack command, for what the kinds above do not cover, with a stated way to tell a change | `args` and `changes` (required), `creates`, `sections`, `scope`, `env`, `yes_to_all` |
 | `environment` | `shell_environment` | Runs shell lines of yours and keeps the environment they produce under a name, for later steps. The only shell the role runs | `name` and `shell` (required), `executable` |
-| `spack` | `spack_checkout` | Installs Spack at a path at a version, by a shallow git clone; leaves a Spack already there at that version alone. Only as the first step | `version` and `path` (required), `source` |
+| `spack` | `spack_checkout` | Installs Spack at a path at a version, by a shallow git clone; leaves a Spack already there at that version alone; with `move`, moves one at another version. Only as the first step | `version` and `path` (required), `source`, `move` |
 
 On Spack 1.1, a step cannot write to a configuration scope whose directory
 does not exist yet: the user scope (`~/.spack`) or the system scope
@@ -107,9 +107,29 @@ spack_setup:
   alone, no change, and no network needed. Its own files edited: left alone
   too, with a warning naming them. A Spack at another version: the step
   fails, naming what it found and what was asked for, and nothing is
-  changed; this step does not move a Spack to another version. Anything else
+  changed, unless the step has `move: true` (below). Anything else
   (a file, a directory that is not a Spack): the step fails, nothing
   changed.
+- **Moving it to another version: `move: true`.** Off by default. With it,
+  a Spack at the path at another version is moved to the version named, in
+  place, forward or back, to a tag, a branch or a commit, and the step reports
+  a change, with `moved_from` naming what was there. The new version is
+  cloned beside the path first (`.<name>.move-*`) and its `spack --version`
+  checked; only then is it fetched into the path and checked out, and the
+  Spack's `origin` set to the source named. Everything the site added is
+  kept: its configuration in `etc/spack/`, the packages built under `opt/`,
+  its environments. The move is refused, with nothing changed and the files
+  named, when Spack's own files have been edited, or when the new version
+  has a file where the site added one, or a directory where the site has a
+  file (Spack 1.2 has `etc/spack/site/README.md`, which Spack 1.0 leaves to
+  the site; move yours aside and run again). Nothing the old version built is
+  rebuilt or removed: environments may need to be concretized and installed
+  again, by steps of your own after this one. The steps after a move run the
+  new version. In check mode the move is reported, but no source is
+  contacted, so a missing version or a file in the way is found only when the
+  move is made. `.git` keeps both versions' objects. A move killed part-way
+  can leave the hidden `.<name>.move-*` directory, which later runs ignore
+  and you may delete.
 - **A commit is given by its full hash.** Any 7 to 39 hexadecimal digits are
   taken for a short hash and refused, as git cannot fetch by one; a tag or
   branch so named is refused too.

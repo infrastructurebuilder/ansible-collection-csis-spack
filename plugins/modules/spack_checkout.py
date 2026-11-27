@@ -20,9 +20,9 @@ description:
     directory, and Spack is installed and a change is reported. A Spack
     already at the version named is left alone and no change is reported,
     whether this module installed it or a person did. A Spack at another
-    version fails the task with nothing changed; this module does not move
-    a Spack to another version. Anything else (a file, a directory that is
-    not a Spack) fails the task with nothing changed.
+    version fails the task with nothing changed, unless O(move) is true, in
+    which case it is moved to the version named. Anything else (a file, a
+    directory that is not a Spack) fails the task with nothing changed.
   - A Spack at the version named whose own files have been edited is left
     alone too, and a warning names the edited files.
   - Whether a Spack is at the version named is decided without the network, so a repeat run
@@ -87,8 +87,30 @@ options:
     default: https://github.com/spack/spack.git
   move:
     description:
-      - Only changes what happens when the path holds a Spack at another
-        version.
+      - Only changes what happens when O(path) holds a Spack at another
+        version. Off, the task fails with nothing changed. On, the Spack is
+        moved to O(version) in place, forward or back, and a change is
+        reported, with RV(moved_from) naming what was there.
+      - The new version is first cloned into a hidden directory beside
+        O(path), C(.<name>.move-*), and its C(spack --version) checked; only
+        then is it fetched from that copy into O(path) and checked out, and
+        the Spack's C(origin) set to O(source). A move killed part-way can
+        leave that directory behind; later runs ignore it, and it may be
+        deleted.
+      - Everything the site added is kept (its configuration under
+        C(etc/spack/), packages built under C(opt/), its environments). The
+        move is refused with nothing changed, naming the files, when Spack's
+        own files have been edited, or when the new version has a file where
+        the site added one, or a directory where the site has a file; git
+        would replace an ignored file there without a word. Move such files
+        aside and run again.
+      - Nothing the old version built is rebuilt, concretized again or
+        removed; environments may need that, by tasks of their own. Tasks
+        after a move run the new version. C(.git) keeps both versions'
+        objects.
+      - In check mode the move is reported and no source is contacted, so a
+        version not in the source, or a file in the way, is found only when
+        the move is made.
     type: bool
     default: false
     version_added: 0.0.4
@@ -111,6 +133,12 @@ EXAMPLES = r"""
     settings:
       config:
         build_jobs: 8
+
+- name: Move the Spack at /opt/spack to v1.2.0, whatever version it is at
+  infrastructurebuilder.csis_spack.spack_checkout:
+    version: v1.2.0
+    path: /opt/spack
+    move: true
 
 - name: Install it from a site's own mirror of Spack's repository, through a proxy
   infrastructurebuilder.csis_spack.spack_checkout:
@@ -148,6 +176,13 @@ spack_version:
     - What C(spack --version) printed, as C(1.2.0 (63962ed9...)). Not
       returned in check mode when Spack is not installed yet.
   returned: when Spack was run
+  type: str
+moved_from:
+  description:
+    - What was at O(path) before a move, the tag, branch or commit checked
+      out and what C(spack --version) printed, as
+      C(tag v1.1.0, where spack --version printed 1.1.0 (0c2be44e...)).
+  returned: when a Spack was moved, or would be in check mode
   type: str
 edited:
   description: Spack's own files at O(path) that differ from the version checked out.
