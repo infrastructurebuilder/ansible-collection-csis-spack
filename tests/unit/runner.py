@@ -102,11 +102,18 @@ def run_setup(
     env: dict[str, str],
     check: bool = False,
     variables: dict[str, Any] | None = None,
+    playbook: str = PLAYBOOK,
+    extra_args: list[str] | None = None,
 ) -> Played:
-    """Apply ``infrastructurebuilder.csis_spack.setup`` on localhost with ``steps``."""
+    """Apply ``infrastructurebuilder.csis_spack.setup`` on localhost with ``steps``.
+
+    ``playbook`` replaces the play that applies the role (it must read
+    ``variables.json`` and write ``results.json`` as ``PLAYBOOK`` does), and
+    ``extra_args`` go to ``ansible-playbook`` (``--tags``, for example).
+    """
     directory = where / "play"
     directory.mkdir(exist_ok=True)
-    (directory / "site.yml").write_text(PLAYBOOK)
+    (directory / "site.yml").write_text(playbook)
     (directory / "variables.json").write_text(json.dumps({"spack_setup": steps} | (variables or {})))
     results = directory / "results.json"
     results.unlink(missing_ok=True)
@@ -120,6 +127,7 @@ def run_setup(
     ]
     if check:
         command.append("--check")
+    command += extra_args or []
     full_env = (
         os.environ
         | {
