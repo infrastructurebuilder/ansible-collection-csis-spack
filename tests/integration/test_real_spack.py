@@ -343,3 +343,36 @@ def test_a_push_with_nothing_to_push_leaves_the_index_alone(
     again = run_module("spack_buildcache_push", push, env=spack_env)
     assert (again["failed"], again["changed"], again["pushed"]) == (False, False, []), again.get("msg")
     assert (index.stat().st_mtime_ns, index.read_bytes()) == before
+
+
+def test_a_preview_reads_relative_includes_where_they_are(
+    tmp_path: Path, spack_env: dict[str, str], spack_version: str
+) -> None:
+    """Spec 006, research R2 to R4: an include above the environment, and one that names nothing."""
+    site = tmp_path / "site"
+    env = site / "env"
+    env.mkdir(parents=True)
+    (site / "shared.yaml").write_text("config:\n  build_jobs: 5\n")
+    store = f"  config:\n    install_tree:\n      root: {tmp_path / 'store'}\n"
+    (env / "spack.yaml").write_text(
+        "spack:\n  specs: [zlib]\n  view: false\n" + store + "  include:\n  - ../shared.yaml\n"
+    )
+    args = {"path": str(env), "state": "concretized"}
+    preview = run_module("spack_env", args, env=spack_env, check=True)
+    assert preview["failed"] is False, preview.get("msg")
+    assert preview["concretized"] is True
+    real = run_module("spack_env", args, env=spack_env)
+    assert (real["failed"], real["concretized"]) == (False, True), real.get("msg")
+    again = run_module("spack_env", args, env=spack_env, check=True)
+    assert (again["failed"], again["concretized"]) == (False, False), again.get("msg")
+
+    missing = tmp_path / "missing" / "env"
+    missing.mkdir(parents=True)
+    (missing / "spack.yaml").write_text(
+        "spack:\n  specs: [zlib]\n  view: false\n" + store + "  include:\n  - ../missing.yaml\n"
+    )
+    refused = run_module(
+        "spack_env", {"path": str(missing), "state": "concretized"}, env=spack_env, check=True
+    )
+    assert refused["failed"] is True
+    assert "Required path" in refused["msg"]

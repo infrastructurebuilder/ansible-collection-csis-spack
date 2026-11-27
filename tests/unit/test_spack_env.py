@@ -328,3 +328,55 @@ def test_without_yes_to_all_spack_env_runs_what_it_did_and_reads_no_help(spack: 
     spack.module("spack_env", path=str(spack.env), install_args=["--fake"])
     assert spack.calls("install") == [["install", "--fake"]]
     assert helps(spack) == []
+
+
+# Spec 006: the preview's copy reads relative include and develop paths where they are.
+RELATIVE = """spack:
+  specs: [zlib]
+  include:
+  - ./extra.yaml
+  - ../shared.yaml
+  - path: ../opt.yaml
+    optional: true
+  - /abs/x.yaml
+  - $env/y.yaml
+  - git: https://git.example.org/c.git
+    branch: main
+    paths: [c.yaml]
+  develop:
+    zlib:
+      spec: zlib@=1.3.1
+      path: ../zlib-src
+    gmake:
+      spec: gmake@=4.4.1
+      path: /abs/gmake
+"""
+
+
+def test_relative_paths_are_rewritten_in_the_copy_only(spack: Spack) -> None:
+    import yaml
+
+    (spack.env / "spack.yaml").write_text(RELATIVE)
+    result = spack.module("spack_env", path=str(spack.env), check=True)
+    assert result["failed"] is False, result.get("msg")
+    above = str(spack.env.parent)
+    previewed = yaml.safe_load(spack.state["concretized_manifest"])["spack"]
+    assert previewed["include"] == [
+        f"{spack.env}/extra.yaml",
+        f"{above}/shared.yaml",
+        {"path": f"{above}/opt.yaml", "optional": True},
+        "/abs/x.yaml",
+        "$env/y.yaml",
+        {"git": "https://git.example.org/c.git", "branch": "main", "paths": ["c.yaml"]},
+    ]
+    assert previewed["develop"]["zlib"]["path"] == f"{above}/zlib-src"
+    assert previewed["develop"]["gmake"]["path"] == "/abs/gmake"
+    assert (spack.env / "spack.yaml").read_text() == RELATIVE
+    calls = [call[0] for call in spack.state["calls"] if call[:1] in (["python"], ["-e"])]
+    assert calls[0] == "python", spack.state["calls"]
+
+
+def test_relative_paths_are_not_looked_for_where_there_are_none(spack: Spack) -> None:
+    result = spack.module("spack_env", path=str(spack.env), check=True)
+    assert result["failed"] is False, result.get("msg")
+    assert spack.calls("python") == []
