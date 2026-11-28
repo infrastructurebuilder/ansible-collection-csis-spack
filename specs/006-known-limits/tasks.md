@@ -139,4 +139,4 @@ T009 tests/integration/test_real_spack.py
 
 ## Phase 7: Convergence
 
-- [ ] T023 In `plugins/modules/spack_buildcache_push.py`, when `update_index` is set, pass `--update-index` to the `force: once` push of the chosen specs as well, so that the index is rebuilt after a forced push even when the push that follows sends nothing; in `tests/unit/test_spack_buildcache_push.py`, a test that with `force: once`, `update_index: true` and a mirror lacking nothing, the forced push the stand-in records carries `--update-index`, per the edge case "`update_index: true` with `force`" (partial)
+- [X] T023 In `plugins/modules/spack_buildcache_push.py`, when `update_index` is set, pass `--update-index` to the `force: once` push of the chosen specs as well, so that the index is rebuilt after a forced push even when the push that follows sends nothing; in `tests/unit/test_spack_buildcache_push.py`, a test that with `force: once`, `update_index: true` and a mirror lacking nothing, the forced push the stand-in records carries `--update-index`, per the edge case "`update_index: true` with `force`" (partial)

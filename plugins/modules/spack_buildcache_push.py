@@ -279,9 +279,13 @@ def main():
             elif params["key"]:
                 push += ["--key", params["key"]]
             if force == "once" and overwrite:
-                # Exactly these, by hash, and not their dependencies again.
+                # Exactly these, by hash, and not their dependencies again. A forced push is a
+                # push: the index is rebuilt after it, though the push that follows sends nothing.
                 chosen = ["/" + digest for digest in sorted(overwrite)]
-                again = [*push, "--only", "package", "--force", params["mirror"], *chosen]
+                again = list(push)
+                if params["update_index"]:
+                    again.append("--update-index")
+                again += ["--only", "package", "--force", params["mirror"], *chosen]
                 spack.run(spack.answered(again, words=2), env_path=path)
             args = list(push)
             if params["update_index"]:

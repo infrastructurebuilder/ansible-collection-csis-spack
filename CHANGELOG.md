@@ -15,6 +15,10 @@ playbook passes changes.
   run would not. The copy's relative paths are now rewritten to the real
   environment's absolute paths, with Spack's own Python, before it is
   concretized; a `spack.yaml` with neither key is previewed as before.
+- `spack_buildcache_push` with `force: once` and `update_index: true`
+  rebuilds the mirror's index after the forced push too. Before, when the
+  mirror lacked nothing else, the push that followed sent nothing, and the
+  index was not rebuilt after the packages were overwritten.
 
 ### Documented
 
