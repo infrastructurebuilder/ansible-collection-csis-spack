@@ -281,3 +281,13 @@ def test_update_index_says_when_the_index_is_rebuilt() -> None:
     described = " ".join(" ".join(yaml.safe_load(documentation)["description"]).split())
     assert "alone is not reported as a change" not in described
     assert "only after a push that sent something" in described
+
+
+def test_force_once_with_update_index_rebuilds_the_index_after_the_forced_push(spack: Spack) -> None:
+    """Spec 006, T023: a forced push is a push, so the index is rebuilt after it."""
+    push(installed(spack))
+    result = push(spack, force="once", update_index=True)
+    assert result["changed"] is True
+    forced = [call for call in spack.calls("buildcache", "push") if "--force" in call]
+    assert len(forced) == 1
+    assert "--update-index" in forced[0]
