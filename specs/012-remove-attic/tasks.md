@@ -81,22 +81,22 @@ is placed. This blocks T010.
 
 ### Tests for User Story 1 (written first; they must fail)
 
-- [ ] T006 [US1] Create `tests/unit/test_no_attic.py` with a module docstring: spec 012 removed the ATTIC, and its content is in specs 001 and 007–011, recorded in `specs/012-remove-attic/coverage/`. Add one test whose name contains `there_is_no_attic`: `(ROOT / "ATTIC").exists()` is false. Use `from runner import ROOT`, as `tests/unit/test_no_site_knowledge.py` does
-- [ ] T007 [US1] Run `just unit tests/unit/test_no_attic.py` and see it fail because `ATTIC/` exists. Do not commit T006 yet: `just test` must pass after every commit
+- [X] T006 [US1] Create `tests/unit/test_no_attic.py` with a module docstring: spec 012 removed the ATTIC, and its content is in specs 001 and 007–011, recorded in `specs/012-remove-attic/coverage/`. Add one test whose name contains `there_is_no_attic`: `(ROOT / "ATTIC").exists()` is false. Use `from runner import ROOT`, as `tests/unit/test_no_site_knowledge.py` does
+- [X] T007 [US1] Run `just unit tests/unit/test_no_attic.py` and see it fail because `ATTIC/` exists. Do not commit T006 yet: `just test` must pass after every commit
 
 ### Implementation for User Story 1
 
-- [ ] T008 [US1] Check FR-002: the specs the record relies on (001, 006, 007, 008, 009, 010, 011) are merged into `develop`. Each one's row in `specs/README.md` says merged or complete, and `git log develop --oneline -- specs/<dir>/spec.md` shows each. Note the result against this task
-- [ ] T009 [US1] Read `ATTIC/` for anything not tracked by git (`git status --short --ignored ATTIC`), so that the removal takes nothing that history lacks. If there is something, stop and ask the operator
-- [ ] T010 [US1] **On the operator's word only** (FR-003):
+- [X] T008 [US1] Check FR-002: the specs the record relies on (001, 006, 007, 008, 009, 010, 011) are merged into `develop`. Each one's row in `specs/README.md` says merged or complete, and `git log develop --oneline -- specs/<dir>/spec.md` shows each. Note the result against this task. (2026-11-28: all seven merged into `develop`: 001 `259113e`, 006 `b4625de`, 007 `0c2dbb0`, 008 `fa647f5`, 009 `06bf139`, 010 `b290cce`, 011 `e16159d`; each row says complete or merged.)
+- [X] T009 [US1] Read `ATTIC/` for anything not tracked by git (`git status --short --ignored ATTIC`), so that the removal takes nothing that history lacks. If there is something, stop and ask the operator. (2026-11-28: nothing; its 6 files were all tracked.)
+- [X] T010 [US1] **On the operator's word only** (FR-003):
   1. `git rm -r -q ATTIC`, and commit it together with T006's test. The commit message says the ATTIC is removed because specs 001 and 007–011 hold its content, as recorded in `specs/012-remove-attic/coverage/README.md`.
   2. Run `just unit tests/unit/test_no_attic.py`: the test passes.
-- [ ] T011 [US1] In `specs/README.md`, rewrite the paragraph below the table that says the retrospective specs were "planned then in files now in the ATTIC" (FR-006). It should say:
+- [X] T011 [US1] In `specs/README.md`, rewrite the paragraph below the table that says the retrospective specs were "planned then in files now in the ATTIC" (FR-006). It should say:
   - the work before Spec Kit (2026-11-13 to 2026-11-17) is recorded in specs 007–011 and 001;
   - the coverage record is [012-remove-attic/coverage/README.md](012-remove-attic/coverage/README.md);
   - the retired plans can be read in git at the parent of T010's commit, named by its short hash, with `git show <hash>:ATTIC/PLAN.md`.
 
-  Run that command and see it print the old plan's header. Commit
+  Run that command and see it print the old plan's header. Commit. (Done 2026-11-28. The note names the release tag 0.0.4 first, and the parent of T010's commit, `1747261`, beside it. A squash-merge leaves `1747261` only on the kept feature branch, not on `develop`; 0.0.4 holds the same ATTIC tree, `cb74e92`, and is on GitHub. Both `git show` lines print the files' first lines.)
 
 **Checkpoint**: User Story 1 works: no ATTIC, its last state named, the unit test holding it.
 

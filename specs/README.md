@@ -33,12 +33,26 @@ converge check** is the date of that run.
 | 14 | [014 `spack_env` finds a module root written with `$env`](014-module-root-variables/spec.md) | ❌ | a site whose environment sets its module root with Spack's variables (spack-stack's `$env/modules`); a site that relies on a run reporting what it changed | an environment whose root is `$env/modules` applied twice: regenerated and reported once, the second run reporting no change, on each supported Spack | drafted 2026-11-27, from the Cloud Sandbox's spec 004 (T020); on `develop` as a draft ([spec](014-module-root-variables/spec.md)) | nothing | `feature/module-root-variables` |  |  | never |
 
 Specs 007 to 011 are retrospectives: the work they record was done between
-2026-11-13 and 2026-11-14, before this repository adopted Spec Kit, and was
-planned then in files now in the ATTIC. They were written from those files
-on 2026-11-27, so that every piece of the collection's work has a spec, and
-checked against the code with `/speckit-converge` the same day. Specs 001
-and 002 were finished before `/speckit-converge` was used here, and were
-first checked with it on 2026-11-25, after the fact.
+2026-11-13 and 2026-11-14, before this repository adopted Spec Kit. It was
+planned then in files kept in a directory called the ATTIC, with stage 5 of
+those plans carried on as spec 001. The retrospectives were written from
+those files on 2026-11-27, so that every piece of the collection's work has
+a spec, and checked against the code with `/speckit-converge` the same day.
+Specs 001 and 002 were finished before `/speckit-converge` was used here,
+and were first checked with it on 2026-11-25, after the fact.
+
+The work before Spec Kit (2026-11-13 to 2026-11-17) is therefore recorded
+in specs 007 to 011 and 001. Spec 012 removed the ATTIC on 2026-11-28, after
+its [coverage record](012-remove-attic/coverage/README.md) showed where
+every part of it went. The retired plans can still be read in git, for
+example at the release tag 0.0.4, which holds them unchanged since the
+history reset of 2026-11-18 (as does `1747261`, the last commit of
+`feature/remove-attic` before their removal):
+
+```sh
+git show 0.0.4:ATTIC/PLAN.md
+git show 0.0.4:ATTIC/COLL-INPROGRESS/COLL-STAGE-1.md
+```
 
 ## Standing beside them
 
