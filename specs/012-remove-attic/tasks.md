@@ -61,7 +61,7 @@ is placed. This blocks T010.
   End with "Could not place".
 - [ ] T004 If T002 or T003 finds an item that no spec holds and that is still wanted, stop and ask the operator: carry it into `specs/001-galaxy-publish/` (or the spec it belongs to), or list it as not needed with their reason. Record the answer in that record's row. If nothing was found, write "nothing found" against this task
 - [ ] T005 Write `specs/012-remove-attic/coverage/README.md`:
-  - the seven parts of the ATTIC (`ATTIC/PLAN.md` lines 1–8, 9–47 and 49–227, and `COLL-STAGE-1.md` to `COLL-STAGE-5.md`), each with its line count and the record that covers it, as links;
+  - the eight parts of the ATTIC, in seven records (`ATTIC/PLAN.md` lines 1–8, 9–47 and 49–227, and `COLL-STAGE-1.md` to `COLL-STAGE-5.md`), each with its line count and the record that covers it, as links;
   - each record's "Could not place" and "disagree" items, and where each was settled (research R2);
   - the record's state: **complete** when every part has a record and every "Could not place" says nothing, otherwise **open**, naming what is open ([data-model.md](data-model.md), "States").
 
@@ -135,7 +135,7 @@ does `git grep -n -w ATTIC -- . ':!specs' ':!CHANGELOG.md' ':!tests/unit/test_no
   - under Development Workflow, reword "There is no `PLAN.md`" to "The one this repository had was closed on 2026-11-17; the work it planned is recorded in the specs 007 to 011 and 001." Keep "and none is created again" and the sentence after it;
   - set **Version** to 1.1.0 and **Last Amended** to the day of the amendment.
 
-  Record what changed and why against this task and in the commit message, not in the constitution's text. Then, as Governance asks, read the open specs (013) for anything the amendment makes untrue, and correct it.
+  Record what changed and why against this task and in the commit message, not in the constitution's text. `/speckit-constitution` writes a Sync Impact Report as an HTML comment at the top of the file (its step 4): let it, but word it without the word `ATTIC`, calling the removed section "the section on retired plans (spec 012)", so that T019's test passes (analysis I1). Then, as Governance asks, read the open specs (013) for anything the amendment makes untrue, and correct it.
 - [ ] T019 [US2] Run `just unit tests/unit/test_no_attic.py`: both tests pass. Run the `git grep` of the Independent Test above: it prints nothing. Commit
 
 **Checkpoint**: both stories work.

@@ -8,15 +8,15 @@ branch `feature/remove-attic`.
 ## The coverage record is complete
 
 Open [coverage/README.md](coverage/README.md). Every part of the ATTIC
-(`ATTIC/PLAN.md` in three parts, and the five stage files) names its
-record, and the record's "Could not place" says nothing. The README's
+(`ATTIC/PLAN.md` in three parts, and the five stage files: eight
+parts, in seven records) names its record, and the record's "Could not place" says nothing. The README's
 state is **complete**.
 
 ## The ATTIC is gone and nothing points at it
 
 ```sh
 test ! -e ATTIC && echo "no ATTIC"
-git grep -n ATTIC -- . ':!specs' ':!CHANGELOG.md'   # prints nothing
+git grep -n -w ATTIC -- . ':!specs' ':!CHANGELOG.md' ':!tests/unit/test_no_attic.py'   # prints nothing
 just unit tests/unit/test_no_attic.py               # the same, held by a test
 ```
 

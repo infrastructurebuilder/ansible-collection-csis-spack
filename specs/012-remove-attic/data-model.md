@@ -46,7 +46,7 @@ place, or says "nothing".
 | State | When |
 | --- | --- |
 | open | a part of the ATTIC has no record, or a record's "Could not place" lists something |
-| complete | all seven parts have a record, and every "Could not place" says nothing |
+| complete | all eight parts of the ATTIC have a record (seven records), and every "Could not place" says nothing |
 
 `coverage/README.md` says which state the record is in. The removal (FR-003)
 waits for "complete".

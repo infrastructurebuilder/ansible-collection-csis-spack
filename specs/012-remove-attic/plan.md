@@ -125,7 +125,7 @@ The operator answered "yes" to all three, as proposed, on 2026-11-27.
   wanted and spec 001 does not hold it, it is added to spec 001 first.
 - `coverage/plan-header.md`: `ATTIC/PLAN.md` lines 1–8, plus any of lines
   9–47 that no other record places. Lines 46–47 are the Cloud Sandbox's.
-- `coverage/README.md`: the seven parts, each with its record, and the
+- `coverage/README.md`: the eight parts of the ATTIC, in seven records, each part with its record, and the
   record's state.
 
 ### Step 2: the constitution (FR-004)

@@ -42,7 +42,7 @@ ordering, recorded in its own `PLAN.md`, so it is "not needed here".
 **Decision:** the coverage record gains two files: one for
 `COLL-STAGE-5.md` into spec 001, line by line like the others, and one for
 `ATTIC/PLAN.md` lines 1–8 and the stage-5 lines. A `coverage/README.md`
-names all seven parts and the record for each, so that FR-001 and SC-001 can
+names all eight parts (in seven records) and the record for each, so that FR-001 and SC-001 can
 be checked from one page. If the line-by-line pass finds anything of stage 5
 that spec 001 does not hold and that is still wanted, it is carried into
 spec 001 first (the spec's first edge case).
@@ -136,7 +136,7 @@ pointing at it again.
 
 | # | Decision | Alternatives considered |
 | --- | --- | --- |
-| 1 | Complete the coverage record with stage 5 and `ATTIC/PLAN.md` lines 1–8, and gather all seven parts in `coverage/README.md` (R1, R2) | Rely on spec 001 having been made from stage 5: SC-001 asks for zero items unaccounted, which only a record shows |
+| 1 | Complete the coverage record with stage 5 and `ATTIC/PLAN.md` lines 1–8, and gather all eight parts, in seven records, in `coverage/README.md` (R1, R2) | Rely on spec 001 having been made from stage 5: SC-001 asks for zero items unaccounted, which only a record shows |
 | 2 | Name the last commit holding `ATTIC/` in the same task as the removal (R4) | Name it beforehand: its hash is not known until the removal is committed |
 | 3 | Constitution 1.0.1 → 1.1.0, with the change recorded outside its text (R5); the operator decides | 2.0.0: no principle is removed; 1.0.2: a section's removal is more than wording |
 | 4 | A unit test holds SC-002 (R6) | A one-off search in the quickstart: it would not stop the ATTIC coming back |
