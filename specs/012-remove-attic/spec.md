@@ -11,6 +11,18 @@ the ATTIC become redundant and to make speckit hold specs for all the work so
 we can remove ATTIC … I also want a final spec for 'Remove ATTIC because it is
 redundant'."
 
+## Clarifications
+
+### Session 2026-11-27
+
+- Recorded on the operator's yes to the plan, 2026-11-27: the
+  constitution's amendment takes it from 1.0.1 to 1.1.0; the section "The
+  ATTIC" is removed with nothing in its place, the bullet on `PLAN.md` says
+  the old plan's work is recorded in the specs 007 to 011 and 001, and the
+  amendment's "what changed and why" is recorded in the commit and this
+  spec's tasks, not in the constitution's text; and a unit test,
+  `tests/unit/test_no_attic.py`, holds SC-002.
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Everything the repository knows is in its specs (Priority: P1)

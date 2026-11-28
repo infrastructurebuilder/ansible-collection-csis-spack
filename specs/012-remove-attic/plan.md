@@ -95,7 +95,9 @@ design below, and unchanged. Once the amendment and the removal are done,
 the last row's section no longer exists; this check was made against the
 constitution as it stands today (1.0.1).
 
-## Decisions to confirm
+## Decisions to confirm (confirmed 2026-11-27)
+
+The operator answered "yes" to all three, as proposed, on 2026-11-27.
 
 1. **The constitution's new version: 1.1.0** (R5). The amendment removes
    the section "The ATTIC", which is not a principle, and rewords two lines
