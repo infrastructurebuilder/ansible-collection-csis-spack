@@ -61,7 +61,7 @@ full-test: test import-check
     rm -rf .tmp/ansible_collections
     mkdir -p {{ sanity_tree }}
     # Without the planning and agent material, which galaxy.yml keeps out of the tarball too: sanity checks what is shipped, and Spec Kit's own scripts are not ours to hold to shellcheck.
-    git ls-files --cached --others --exclude-standard -z -- . ':!.specify' ':!.claude' ':!specs' ':!ATTIC' ':!CLAUDE.md' | rsync -a --from0 --files-from=- ./ {{ sanity_tree }}/
+    git ls-files --cached --others --exclude-standard -z -- . ':!.specify' ':!.claude' ':!specs' ':!CLAUDE.md' | rsync -a --from0 --files-from=- ./ {{ sanity_tree }}/
     # A repository of its own: inside this one, ansible-test would ask this repository's git for its files, and .tmp/ is ignored.
     cd {{ sanity_tree }} && git init -q && git add -A
     cd {{ sanity_tree }} && uv run --project {{ justfile_directory() }} ansible-test sanity --venv --python 3.12

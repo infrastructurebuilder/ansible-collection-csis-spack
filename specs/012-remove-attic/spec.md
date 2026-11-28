@@ -4,12 +4,24 @@
 
 **Created**: 2026-11-27
 
-**Status**: Draft
+**Status**: Done 2026-11-28: the coverage record is complete, `ATTIC/` is removed, the constitution is at 1.1.0, and `just full-test` passes (356 unit, 30 integration). Not merged, not released (nothing a user installs changes).
 
 **Input**: The operator, 2026-11-27: "The goal is to have the information in
 the ATTIC become redundant and to make speckit hold specs for all the work so
 we can remove ATTIC … I also want a final spec for 'Remove ATTIC because it is
 redundant'."
+
+## Clarifications
+
+### Session 2026-11-27
+
+- Recorded on the operator's yes to the plan, 2026-11-27: the
+  constitution's amendment takes it from 1.0.1 to 1.1.0; the section "The
+  ATTIC" is removed with nothing in its place, the bullet on `PLAN.md` says
+  the old plan's work is recorded in the specs 007 to 011 and 001, and the
+  amendment's "what changed and why" is recorded in the commit and this
+  spec's tasks, not in the constitution's text; and a unit test,
+  `tests/unit/test_no_attic.py`, holds SC-002.
 
 ## User Scenarios & Testing *(mandatory)*
 

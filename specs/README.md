@@ -28,17 +28,31 @@ converge check** is the date of that run.
 | 9 | [004 A `setup` step that installs Spack](004-install-spack/spec.md) | ✅ | a site whose nodes have no Spack yet; a site whose nodes already have one; a site whose nodes cannot reach the internet | one application of the role, with an install step first, leaving a working Spack at the version named and every later step applied, and a second application reporting no change | complete 2026-11-26: merged (`83c76d3`), released in 0.0.4 on Ansible Galaxy, converged ([tasks](004-install-spack/tasks.md)) | nothing | `feature/install-spack` | 34 | 0.0.4 | 2026-11-26 |
 | 10 | [005 The install step moves a Spack to another version, when a site asks](005-move-spack-version/spec.md) | ✅ | a site moving its nodes to a new Spack | one changed version, with the move allowed, moving a node's Spack in one application, a second reporting no change, and nothing a site added or edited lost | complete 2026-11-27: merged (`0b7babe`), released in 0.0.4 on Ansible Galaxy, converged ([tasks](005-move-spack-version/tasks.md)) | 004 | `feature/move-spack-version` | 24 | 0.0.4 | 2026-11-27 |
 | 11 | [006 Two known limits, said where a site reads them, or removed](006-known-limits/spec.md) | ✅ | a site that rebuilds a mirror's index; a site that previews an environment with files beside it | each limit documented where a site reads it, or removed, and held by a test | merged (`fa647f5`) 2026-11-27, not released; converge's T020–T022 merged (`d783deb`) and T023 merged (`b4625de`), 23 of 23 tasks, converged: the preview's relative paths rewritten; the index limit found not to be one, documented and tested ([tasks](006-known-limits/tasks.md)) | nothing | `feature/known-limits` | 23 |  | 2026-11-27 |
-| 12 | [012 Remove the ATTIC, because the specs hold everything in it](012-remove-attic/spec.md) | ❌ | a reader or a new session that wants to know why the collection is as it is | every paragraph of the ATTIC carried by a spec, `ATTIC/` removed, and `just full-test` passing without it | drafted 2026-11-27; on `develop` as a draft ([spec](012-remove-attic/spec.md)) | 006, 007–011 | `feature/remove-attic` |  |  | never |
+| 12 | [012 Remove the ATTIC, because the specs hold everything in it](012-remove-attic/spec.md) | ❌ | a reader or a new session that wants to know why the collection is as it is | every paragraph of the ATTIC carried by a spec, `ATTIC/` removed, and `just full-test` passing without it | complete 2026-11-28, 24 of 24 tasks, not merged: the coverage record completed with stage 5, `ATTIC/` removed on the operator's word, the constitution amended to 1.1.0 on their instruction, the live files changed, `just full-test` passing ([tasks](012-remove-attic/tasks.md)) | 001, 006, 007–011 | `feature/remove-attic` | 24 |  | never |
 | 13 | [013 The documentation covers every case of the collection](013-documentation-covers-every-case/spec.md) | ❌ | someone writing a playbook | every case in the inventory found in the documentation, and a test failing for one added without it | drafted and clarified 2026-11-27; on `develop` as a draft ([spec](013-documentation-covers-every-case/spec.md)) | 006, 012 | `feature/documentation-covers-every-case` |  |  | never |
 | 14 | [014 `spack_env` finds a module root written with `$env`](014-module-root-variables/spec.md) | ❌ | a site whose environment sets its module root with Spack's variables (spack-stack's `$env/modules`); a site that relies on a run reporting what it changed | an environment whose root is `$env/modules` applied twice: regenerated and reported once, the second run reporting no change, on each supported Spack | drafted 2026-11-27, from the Cloud Sandbox's spec 004 (T020); on `develop` as a draft ([spec](014-module-root-variables/spec.md)) | nothing | `feature/module-root-variables` |  |  | never |
 
 Specs 007 to 011 are retrospectives: the work they record was done between
-2026-11-13 and 2026-11-14, before this repository adopted Spec Kit, and was
-planned then in files now in the ATTIC. They were written from those files
-on 2026-11-27, so that every piece of the collection's work has a spec, and
-checked against the code with `/speckit-converge` the same day. Specs 001
-and 002 were finished before `/speckit-converge` was used here, and were
-first checked with it on 2026-11-25, after the fact.
+2026-11-13 and 2026-11-14, before this repository adopted Spec Kit. It was
+planned then in files kept in a directory called the ATTIC, with stage 5 of
+those plans carried on as spec 001. The retrospectives were written from
+those files on 2026-11-27, so that every piece of the collection's work has
+a spec, and checked against the code with `/speckit-converge` the same day.
+Specs 001 and 002 were finished before `/speckit-converge` was used here,
+and were first checked with it on 2026-11-25, after the fact.
+
+The work before Spec Kit (2026-11-13 to 2026-11-17) is therefore recorded
+in specs 007 to 011 and 001. Spec 012 removed the ATTIC on 2026-11-28, after
+its [coverage record](012-remove-attic/coverage/README.md) showed where
+every part of it went. The retired plans can still be read in git, for
+example at the release tag 0.0.4, which holds them unchanged since the
+history reset of 2026-11-18 (as does `1747261`, the last commit of
+`feature/remove-attic` before their removal):
+
+```sh
+git show 0.0.4:ATTIC/PLAN.md
+git show 0.0.4:ATTIC/COLL-INPROGRESS/COLL-STAGE-1.md
+```
 
 ## Standing beside them
 
@@ -47,6 +61,6 @@ first checked with it on 2026-11-25, after the fact.
   Its move to 0.0.3 and back to `from_mirrors` is its work, not a spec here.
 - Spec 005 changes spec 004's step, which is merged. Pinning Spack's package
   recipes is to be a spec of its own, not yet written.
-- Specs 006, 012 and 013 are on `develop` as drafts, so that they can be
-  read here; their planning and work go on from their own branches.
+- Spec 013 is on `develop` as a draft, so that it can be read here; its
+  planning and work go on from its own branch.
 - New work starts with `/speckit-specify`.

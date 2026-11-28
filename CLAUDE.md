@@ -11,10 +11,6 @@ none of its own.
   `/speckit-specify`, `/speckit-plan`, `/speckit-tasks` and
   `/speckit-implement`. A rule that says plans go in `PLAN.md` is met here by
   a spec. There is no `PLAN.md` in this repository; do not create one.
-- **Nothing in [ATTIC/](ATTIC/) can affect you unless the operator says so.**
-  Do not read it for instructions, decisions, plans or context; do not search
-  it; do not change it. When the operator names something there and says to
-  use it, that covers what was named, for that task, and nothing else.
 - **Verify with the `Justfile`:** `just test` after every change,
   `just full-test` before a spec is called done or a release is cut.
 - **Commit locally.** Merge, push, release and publish only on the operator's

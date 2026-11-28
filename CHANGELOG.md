@@ -2,7 +2,8 @@
 
 ## Unreleased
 
-[specs/006-known-limits](specs/006-known-limits/spec.md). Nothing a
+[specs/006-known-limits](specs/006-known-limits/spec.md) and
+[specs/012-remove-attic](specs/012-remove-attic/spec.md). Nothing a
 playbook passes changes.
 
 ### Fixed
@@ -19,6 +20,14 @@ playbook passes changes.
   rebuilds the mirror's index after the forced push too. Before, when the
   mirror lacked nothing else, the push that followed sent nothing, and the
   index was not rebuilt after the packages were overwritten.
+
+### Removed
+
+- The repository's retired plans, the directory `ATTIC/` of the plans made
+  before it adopted Spec Kit. The specs 001 and 007 to 011 hold everything
+  in it, and [specs/012-remove-attic/coverage/](specs/012-remove-attic/coverage/README.md)
+  records where each part went. It was never in the collection's tarball,
+  so nothing a user installs changes.
 
 ### Documented
 
@@ -204,5 +213,5 @@ single commit, so their commits are no longer in it either. Everything they
 held is in 0.0.1, above. A `requirements.yml` that names one of those tags no
 longer installs; name 0.0.1 instead.
 
-Their plans are kept, as history only, in
-[ATTIC/COLL-INPROGRESS/](ATTIC/COLL-INPROGRESS/).
+Their plans are recorded in the specs 007 to 011 and 001; see
+[specs/README.md](specs/README.md).

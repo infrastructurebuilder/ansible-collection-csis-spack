@@ -419,8 +419,8 @@ class Spack:
 # --- Configuration, as data -------------------------------------------------
 #
 # What follows plans changes to one section of one configuration scope. It was
-# written to what Spack v1.2.0 does (tried by hand; see this repository's
-# ATTIC/COLL-INPROGRESS/COLL-STAGE-2.md):
+# written to what Spack v1.2.0 does (tried by hand; see
+# specs/009-setup-role/research.md, R7 to R9):
 # "spack config add" replaces a scalar, but merges a list into the one that
 # is there (new items in front, none twice), so a list can only be set
 # exactly by removing its path first; "spack config remove" of a path that is
