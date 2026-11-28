@@ -4,7 +4,7 @@
 
 **Created**: 2026-11-27
 
-**Status**: Draft
+**Status**: Done 2026-11-28: the coverage record is complete, `ATTIC/` is removed, the constitution is at 1.1.0, and `just full-test` passes (356 unit, 30 integration). Not merged, not released (nothing a user installs changes).
 
 **Input**: The operator, 2026-11-27: "The goal is to have the information in
 the ATTIC become redundant and to make speckit hold specs for all the work so

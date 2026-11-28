@@ -22,7 +22,9 @@ repository's rules, build and comments say.
 
 ## Not changed
 
-- The tarball's contents: `just build` gives the same files.
+- The tarball's files: `just build` gives the same files, plus the new
+  `tests/unit/test_no_attic.py` (the tarball carries the tests). Three of
+  them change only in a comment, a docstring or the changelog.
 - Every module's options, returns and behaviour.
 - Spec 012's coverage record, which names ATTIC files and line numbers as
   the record of what was there.

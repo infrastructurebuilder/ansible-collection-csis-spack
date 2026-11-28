@@ -35,4 +35,5 @@ prints the old plan's "This file is closed" header.
 - `.specify/memory/constitution.md`: no section "The ATTIC". Its version
   line shows the new version and Last Amended date.
 - `just test`, then `just full-test`: both pass. `just build` gives the same
-  tarball contents as before.
+  files in the tarball as before, plus the new `tests/unit/test_no_attic.py`
+  (the tarball carries the tests), and no `ATTIC/` or `specs/` file.

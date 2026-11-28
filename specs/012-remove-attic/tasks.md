@@ -40,7 +40,7 @@ after T010.
 
 ## Phase 1: Setup
 
-- [ ] T001 On `feature/remove-attic`, run `just test` at the repository root and see it pass, so that later failures are the new test's
+- [X] T001 On `feature/remove-attic`, run `just test` at the repository root and see it pass, so that later failures are the new test's
 
 ---
 
@@ -149,11 +149,14 @@ does `git grep -n -w ATTIC -- . ':!specs' ':!CHANGELOG.md' ':!tests/unit/test_no
 
 ## Phase 5: Polish & Cross-Cutting Concerns
 
-- [ ] T020 Run `just test`
-- [ ] T021 Run `/usr/local/bin/timeout 4800 just full-test` (about 55 minutes; the limit is raised from 4200, because the last run took 58). The sanity tree and the tarball are built without `ATTIC/` (FR-007, SC-003). Fix what it finds, and run it again until it passes
-- [ ] T022 Check every FR-001–FR-007 and SC-001–SC-004 of [spec.md](spec.md), and the scenarios of [quickstart.md](quickstart.md), against a test or a task above; add any that are missing
-- [ ] T023 Set the Status line of `specs/012-remove-attic/spec.md` (done, the date, `just full-test` passing, not merged) and spec 012's row in `specs/README.md` (State, Tasks: 24). Commit
-- [ ] T024 Outside the repository: update the agent's own memory notes that speak of the ATTIC (`speckit-workflow.md`, `collection-repo.md` and the index `MEMORY.md` in the agent's memory directory), so that they say the ATTIC was removed by spec 012 and its content is in specs 001 and 007–011. This is the spec's edge case; nothing is committed
+- [X] T020 Run `just test`
+- [X] T021 Run `/usr/local/bin/timeout 4800 just full-test` (about 55 minutes; the limit is raised from 4200, because the last run took 58). (2026-11-28: passed, 356 unit and 30 integration tests, the integration stage in 55 minutes; T020's `just test` is its first stage.) The sanity tree and the tarball are built without `ATTIC/` (FR-007, SC-003). Fix what it finds, and run it again until it passes
+- [X] T022 Check every FR-001–FR-007 and SC-001–SC-004 of [spec.md](spec.md), and the scenarios of [quickstart.md](quickstart.md), against a test or a task above; add any that are missing. (Done 2026-11-28.
+  - **FR-001–FR-006, SC-001, SC-002 and SC-004:** held by T002–T019 (the record, the removal, the index note, the two tests).
+  - **FR-007 and SC-003:** T021, `just full-test` with 356 unit and 30 integration tests, sanity and the import check, all passing.
+  - **The quickstart:** each scenario was run. The tarball, built from this branch and from `develop` in a temporary worktree, holds the same 89 files plus `tests/unit/test_no_attic.py`, and no `ATTIC/` or `specs/` file. The quickstart and the contract said "the same files" and now say so.)
+- [X] T023 Set the Status line of `specs/012-remove-attic/spec.md` (done, the date, `just full-test` passing, not merged) and spec 012's row in `specs/README.md` (State, Tasks: 24). Commit
+- [X] T024 Outside the repository: update the agent's own memory notes that speak of the ATTIC (`speckit-workflow.md`, `collection-repo.md` and the index `MEMORY.md` in the agent's memory directory), so that they say the ATTIC was removed by spec 012 and its content is in specs 001 and 007–011. This is the spec's edge case; nothing is committed
 
 ---
 
