@@ -49,18 +49,18 @@ after T010.
 **Purpose**: nothing is removed until every paragraph and item of the ATTIC
 is placed. This blocks T010.
 
-- [ ] T002 [P] Write `specs/012-remove-attic/coverage/001-galaxy-publish.md`:
+- [X] T002 [P] Write `specs/012-remove-attic/coverage/001-galaxy-publish.md`:
   - **Source:** every paragraph, bullet, table row and block of `ATTIC/COLL-INPROGRESS/COLL-STAGE-5.md` (140 lines), in order, plus `ATTIC/PLAN.md` lines 13–15 and 40–44 (the stage-5 lines).
   - **Form:** one table with the columns Lines | Source | Carried in, as in `coverage/008-repeat-runs-say-so.md`. Each "Carried in" cell links a section of `specs/001-galaxy-publish/spec.md`, `plan.md` or `tasks.md`, or says **Not carried** with one of the reasons in [data-model.md](data-model.md).
   - **Known:** lines 8–12, why stage 5 came before the Cloud Sandbox's relocation, are "the Cloud Sandbox's work, recorded in that repository" (research R1).
   - **Ending:** sections "Where the source and the code disagree" and "Could not place".
-- [ ] T003 [P] Write `specs/012-remove-attic/coverage/plan-header.md`, in the same form:
+- [X] T003 [P] Write `specs/012-remove-attic/coverage/plan-header.md`, in the same form:
   - lines 1–8 of `ATTIC/PLAN.md`: the title, and the "closed" paragraph, carried in the constitution's Development Workflow ("There is no `PLAN.md`") and in `specs/README.md`;
   - any of lines 9–47 that none of the records for 001 and 007–011 places, checked against each record's "Collection stages" section. Lines 46–47 are the Cloud Sandbox's.
 
   End with "Could not place".
-- [ ] T004 If T002 or T003 finds an item that no spec holds and that is still wanted, stop and ask the operator: carry it into `specs/001-galaxy-publish/` (or the spec it belongs to), or list it as not needed with their reason. Record the answer in that record's row. If nothing was found, write "nothing found" against this task
-- [ ] T005 Write `specs/012-remove-attic/coverage/README.md`:
+- [X] T004 If T002 or T003 finds an item that no spec holds and that is still wanted, stop and ask the operator: carry it into `specs/001-galaxy-publish/` (or the spec it belongs to), or list it as not needed with their reason. Record the answer in that record's row. If nothing was found, write "nothing found" against this task. (2026-11-28: nothing found. T002's record places every item of stage 5, the only things not carried being the Cloud Sandbox's ordering, withdrawn version numbers, counts that the files themselves now hold, and the forms of the decision prompts; T003's places every line of `ATTIC/PLAN.md` 1–47.)
+- [X] T005 Write `specs/012-remove-attic/coverage/README.md`:
   - the eight parts of the ATTIC, in seven records (`ATTIC/PLAN.md` lines 1–8, 9–47 and 49–227, and `COLL-STAGE-1.md` to `COLL-STAGE-5.md`), each with its line count and the record that covers it, as links;
   - each record's "Could not place" and "disagree" items, and where each was settled (research R2);
   - the record's state: **complete** when every part has a record and every "Could not place" says nothing, otherwise **open**, naming what is open ([data-model.md](data-model.md), "States").
