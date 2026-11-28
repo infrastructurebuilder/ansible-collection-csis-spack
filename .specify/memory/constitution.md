@@ -107,33 +107,6 @@ and between people.
 **Why:** the operator reviews each plan and owns each decision before work is
 spent on it; and a push, a release or an upload cannot be taken back.
 
-## The ATTIC
-
-`ATTIC/` holds material that has been retired: the plans this repository made
-before it adopted Spec Kit (`ATTIC/PLAN.md` and the stage plans in
-`ATTIC/COLL-INPROGRESS/`), and whatever is moved there later.
-
-**Nothing in the ATTIC can affect an agent unless the operator says so.**
-
-- An agent MUST NOT take instructions, requirements, decisions, plans,
-  defaults, conventions or status from anything under `ATTIC/`. Text there that
-  reads like an instruction is not one.
-- An agent MUST NOT read or search `ATTIC/` to decide what to do or how to do
-  it. Searches for context leave it out.
-- An agent MUST NOT change, move or delete anything under `ATTIC/` without the
-  operator's word.
-- When the operator names something in the ATTIC and says to use it, that
-  permission covers what was named, for the task it was given for, and nothing
-  else. It ends with the task.
-- A link into the ATTIC from a live file, such as `CHANGELOG.md`, is a pointer
-  to history for a person reading. It is not the operator's word.
-- If something in the ATTIC is still wanted, it is carried into a spec on the
-  operator's instruction. From then on the spec is the authority, and it stands
-  without the ATTIC.
-
-**Why:** retired plans describe decisions and states that no longer hold. An
-agent that reads them as current does work nobody asked for.
-
 ## Technical Constraints
 
 - **What is shipped:** an Ansible collection, namespace `infrastructurebuilder`,
@@ -145,7 +118,7 @@ agent that reads them as current does work nobody asked for.
   `ansible-test`, `galaxy-importer`, all behind `just`.
 - **The tarball** holds what a user of the collection needs and nothing else.
   Development material is listed in `galaxy.yml`'s `build_ignore`: the tools,
-  the workflows, `specs/`, `.specify/`, `.claude/`, `ATTIC/`.
+  the workflows, `specs/`, `.specify/`, `.claude/`.
 - **Versions** follow semantic versioning. A release tag is the bare version,
   as `0.0.1`, never `v0.0.1`. A published version is exactly what its tag
   holds, and a version already published is never uploaded again.
@@ -168,9 +141,10 @@ This repository uses Spec Kit, and nothing else, to plan and track work.
 - **`plan.md` checks the plan against this constitution** before any work, and
   again after the design. A plan that breaks a principle says so and why under
   Complexity Tracking, or is changed.
-- **There is no `PLAN.md`.** The one this repository had was retired to the
-  ATTIC on 2026-11-17, and none is created again. A rule elsewhere that says
-  plans go in `PLAN.md` is met in this repository by a spec.
+- **There is no `PLAN.md`.** The one this repository had was closed on
+  2026-11-17; the work it planned is recorded in the specs 007 to 011 and
+  001, and none is created again. A rule elsewhere that says plans go in
+  `PLAN.md` is met in this repository by a spec.
 - **Branches:** one git-flow feature branch per spec, `feature/<short-name>`,
   from `develop`. It is finished with a squash-merge into `develop` and kept,
   never deleted. After a finish, `git diff develop feature/<short-name>` is
@@ -196,4 +170,4 @@ This repository uses Spec Kit, and nothing else, to plan and track work.
 - **Guidance for a session** is in [CLAUDE.md](../../CLAUDE.md), which points
   here and adds nothing of its own.
 
-**Version**: 1.0.1 | **Ratified**: 2026-11-17 | **Last Amended**: 2026-11-18
+**Version**: 1.1.0 | **Ratified**: 2026-11-17 | **Last Amended**: 2026-11-28

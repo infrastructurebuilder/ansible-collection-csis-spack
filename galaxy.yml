@@ -36,12 +36,11 @@ build_ignore:
   - Justfile
   - tools
   - .github
-  # Planning and agent material: Spec Kit, its specs, and what was retired.
+  # Planning and agent material: Spec Kit and its specs.
   - CLAUDE.md
   - .claude
   - .specify
   - specs
-  - ATTIC
   # An editor's workspace file. The build packs every file here that this
   # list does not name, tracked by git or not.
   - "*.code-workspace"

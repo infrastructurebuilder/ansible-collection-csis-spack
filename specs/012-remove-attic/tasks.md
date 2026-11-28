@@ -113,30 +113,35 @@ does `git grep -n -w ATTIC -- . ':!specs' ':!CHANGELOG.md' ':!tests/unit/test_no
 
 ### Tests for User Story 2 (written first; they must fail)
 
-- [ ] T012 [US2] In `tests/unit/test_no_attic.py`, add a test whose name contains `no_live_file_names_the_attic`:
+- [X] T012 [US2] In `tests/unit/test_no_attic.py`, add a test whose name contains `no_live_file_names_the_attic`:
   - it runs `git grep -l -w ATTIC -- . ':!specs' ':!CHANGELOG.md' ':!tests/unit/test_no_attic.py'` in `ROOT`, with `subprocess.run` and an argument list;
   - it asserts the list of files printed is empty, with the list as the message (`git grep` exits 1 when nothing matches: accept 0 and 1, fail on anything else).
 
   The docstring says why `specs/` and `CHANGELOG.md` are left out: they are history, which says where the content went (spec, User Story 1, scenario 2).
-- [ ] T013 [US2] Run `just unit tests/unit/test_no_attic.py` and see the new test fail, naming `.specify/memory/constitution.md`, `CLAUDE.md`, `galaxy.yml`, `Justfile`, `plugins/module_utils/spack.py` and `tests/unit/fake_spack_setup.py`
+- [X] T013 [US2] Run `just unit tests/unit/test_no_attic.py` and see the new test fail, naming `.specify/memory/constitution.md`, `CLAUDE.md`, `galaxy.yml`, `Justfile`, `plugins/module_utils/spack.py` and `tests/unit/fake_spack_setup.py`
 
 ### Implementation for User Story 2
 
-- [ ] T014 [P] [US2] In `CLAUDE.md`, remove the bullet "**Nothing in [ATTIC/](ATTIC/) can affect you unless the operator says so.**" and its continuation lines. Leave the rest as it is
-- [ ] T015 [P] [US2] In `galaxy.yml`, remove `- ATTIC` from `build_ignore`, and change the comment above that group to "# Planning and agent material: Spec Kit and its specs."
-- [ ] T016 [P] [US2] Change the build, the comment and the docstring that name the ATTIC:
+- [X] T014 [P] [US2] In `CLAUDE.md`, remove the bullet "**Nothing in [ATTIC/](ATTIC/) can affect you unless the operator says so.**" and its continuation lines. Leave the rest as it is
+- [X] T015 [P] [US2] In `galaxy.yml`, remove `- ATTIC` from `build_ignore`, and change the comment above that group to "# Planning and agent material: Spec Kit and its specs."
+- [X] T016 [P] [US2] Change the build, the comment and the docstring that name the ATTIC:
   - `Justfile`: remove `':!ATTIC'` from the sanity tree's `git ls-files` (line 64).
   - `plugins/module_utils/spack.py`: in the comment above "Configuration, as data" (line 423), replace the reference to `ATTIC/COLL-INPROGRESS/COLL-STAGE-2.md` with `specs/009-setup-role/research.md`, R7 to R9.
   - `tests/unit/fake_spack_setup.py`: in the docstring (line 4), replace the same reference with `specs/009-setup-role/research.md` (R7 to R9, R12, R13, R16, R17).
-- [ ] T017 [P] [US2] In `CHANGELOG.md`, "Before 0.0.1", replace "Their plans are kept, as history only, in [ATTIC/COLL-INPROGRESS/](ATTIC/COLL-INPROGRESS/)." with a sentence saying their plans are recorded in the specs 007 to 011 and 001, linking `specs/README.md`. In the Unreleased section, add a line saying the retired plans (the ATTIC) were removed from the repository because those specs hold them (spec 012). Nothing a user installs changes
-- [ ] T018 [US2] **On the operator's instruction only** (FR-004), run `/speckit-constitution` on `.specify/memory/constitution.md` with the change the operator confirmed (plan, "Decisions to confirm"):
+- [X] T017 [P] [US2] In `CHANGELOG.md`, "Before 0.0.1", replace "Their plans are kept, as history only, in [ATTIC/COLL-INPROGRESS/](ATTIC/COLL-INPROGRESS/)." with a sentence saying their plans are recorded in the specs 007 to 011 and 001, linking `specs/README.md`. In the Unreleased section, add a line saying the retired plans (the ATTIC) were removed from the repository because those specs hold them (spec 012). Nothing a user installs changes
+- [X] T018 [US2] **On the operator's instruction only** (FR-004), run `/speckit-constitution` on `.specify/memory/constitution.md` with the change the operator confirmed (plan, "Decisions to confirm"):
   - remove the section "## The ATTIC", heading to **Why**;
   - under Technical Constraints, drop `` `ATTIC/` `` from the tarball's list of development material;
   - under Development Workflow, reword "There is no `PLAN.md`" to "The one this repository had was closed on 2026-11-17; the work it planned is recorded in the specs 007 to 011 and 001." Keep "and none is created again" and the sentence after it;
   - set **Version** to 1.1.0 and **Last Amended** to the day of the amendment.
 
-  Record what changed and why against this task and in the commit message, not in the constitution's text. `/speckit-constitution` writes a Sync Impact Report as an HTML comment at the top of the file (its step 4): let it, but word it without the word `ATTIC`, calling the removed section "the section on retired plans (spec 012)", so that T019's test passes (analysis I1). Then, as Governance asks, read the open specs (013) for anything the amendment makes untrue, and correct it.
-- [ ] T019 [US2] Run `just unit tests/unit/test_no_attic.py`: both tests pass. Run the `git grep` of the Independent Test above: it prints nothing. Commit
+  Record what changed and why against this task and in the commit message, not in the constitution's text. `/speckit-constitution` writes a Sync Impact Report as an HTML comment at the top of the file (its step 4): let it, but word it without the word `ATTIC`, calling the removed section "the section on retired plans (spec 012)", so that T019's test passes (analysis I1).
+  (Done 2026-11-28, on the operator's instruction given at the start of `/speckit-implement 012`.
+  - **What changed:** 1.0.1 → 1.1.0. The section on retired plans was removed whole. "The tarball" no longer lists that directory. "There is no `PLAN.md`" now says the old plan was closed on 2026-11-17 and its work is recorded in specs 007 to 011 and 001. The date is 2026-11-28; nothing else changed.
+  - **Why:** spec 012 removed the directory, because specs 001 and 007 to 011 hold everything it held, and a rule about a directory that does not exist is a dead clause. MINOR: no principle was removed or redefined, and more than wording changed.
+  - **The report:** `/speckit-constitution` wrote its Sync Impact Report without the word, as planned. Its own instructions call the report temporary, to be removed before commit, and the file had none before, so it was removed. Its content is the two items above.
+  - **Open specs:** 013 says spec 012 comes first, which is still true, and 014 does not name the directory or the old version. Neither needed a change.) Then, as Governance asks, read the open specs (013) for anything the amendment makes untrue, and correct it.
+- [X] T019 [US2] Run `just unit tests/unit/test_no_attic.py`: both tests pass. Run the `git grep` of the Independent Test above: it prints nothing. Commit
 
 **Checkpoint**: both stories work.
 

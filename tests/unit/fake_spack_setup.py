@@ -1,7 +1,7 @@
 """The stand-in ``spack``'s configuration, mirrors, keys and detection.
 
 Written to what Spack v1.2.0 does, as tried by hand (see
-ATTIC/COLL-INPROGRESS/COLL-STAGE-2.md):
+specs/009-setup-role/research.md, R7 to R9, R12, R13, R16 and R17):
 
 - ``config add -f`` takes one section per file, replaces a scalar, and merges
   a list into the one that is there, new items in front and none twice;
