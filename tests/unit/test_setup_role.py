@@ -5,9 +5,10 @@ from __future__ import annotations
 import shlex
 from pathlib import Path
 
+import pytest
 import yaml
 from conftest import Spack
-from runner import ROOT
+from runner import ROOT, run_setup
 from spack_source import make_source
 from test_spack_detect import MACHINE
 
@@ -306,3 +307,86 @@ def test_in_check_mode_the_steps_after_a_move_are_not_previewed(spack: Spack, tm
     later = played.results[1]["result"]
     assert (later["previewed"], later["msg"]) == (False, NOT_PREVIEWED)
     assert spack.calls("config") == []
+
+
+# Spec 010, FR-005: the role included from another task, as the Cloud Sandbox includes it.
+INCLUDED = """
+- name: Include the setup role from a task
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  vars_files:
+    - variables.json
+  tasks:
+    - name: Include it
+      ansible.builtin.include_role:
+        name: infrastructurebuilder.csis_spack.setup
+{how}
+    - name: Keep the results for the test
+      ansible.builtin.copy:
+        content: "{{{{ spack_setup_results | default([]) | to_json }}}}"
+        dest: "{{{{ playbook_dir }}}}/results.json"
+        mode: "0644"
+      check_mode: false
+      changed_when: false
+      tags: [always]
+"""
+
+
+# How a site includes the role, and whether its steps run under --tags (research R3).
+WAYS = {
+    "include_role with apply tags": (
+        "include_role",
+        "        apply:\n          tags: [spack]\n      tags: [spack]",
+    ),
+    "import_role tagged": ("import_role", "      tags: [spack]"),
+}
+
+
+@pytest.mark.parametrize("way", list(WAYS))
+def test_under_tags_every_step_runs(spack: Spack, way: str) -> None:
+    action, how = WAYS[way]
+    played = run_setup(
+        [STEPS[0], STEPS[4]], spack.env.parent, env=spack.environ, variables={},
+        playbook=INCLUDED.replace("include_role", action).format(how=how), extra_args=["--tags", "spack"],
+    )  # fmt: skip
+    assert played.rc == 0, played.output
+    assert [result["kind"] for result in played.results] == ["config", "mirror"]
+    assert spack.scope("site", "config") == {"build_jobs": 4}
+    assert spack.calls("mirror", "add"), "the mirror step did not run"
+
+
+def test_under_tags_a_plainly_tagged_include_runs_no_step(spack: Spack) -> None:
+    """Ansible's rule: an include's tags are the include's own, not its tasks' (research R3)."""
+    played = run_setup(
+        [STEPS[0], STEPS[4]], spack.env.parent, env=spack.environ, variables={},
+        playbook=INCLUDED.format(how="      tags: [spack]"), extra_args=["--tags", "spack"],
+    )  # fmt: skip
+    assert played.rc == 0, played.output
+    assert played.results == []
+    assert spack.calls("mirror") == []
+    assert spack.scope("site", "config") == {}
+
+
+def test_included_with_apply_what_apply_gives_reaches_every_step(spack: Spack, tmp_path: Path) -> None:
+    """apply: reaches every step. (Becoming another user is Ansible's own become; research R4.)"""
+    seen = tmp_path / "seen"
+    program = tmp_path / "recording" / "spack"
+    program.parent.mkdir()
+    program.write_text(
+        "#!/bin/sh\n"
+        f'echo "${{CSIS_APPLIED:-unset}} $1" >> {shlex.quote(str(seen))}\n'
+        f'exec {shlex.quote(str(spack.bin / "spack"))} "$@"\n'
+    )
+    program.chmod(0o755)
+    how = '        apply:\n          environment:\n            CSIS_APPLIED: "yes"'
+    played = run_setup(
+        [STEPS[0], STEPS[4]], spack.env.parent, env=spack.environ,
+        variables={"spack_setup_executable": str(program)}, playbook=INCLUDED.format(how=how),
+    )  # fmt: skip
+    assert played.rc == 0, played.output
+    assert played.changed == [True, True]
+    lines = seen.read_text().split("\n")
+    calls = [line for line in lines if line]
+    assert calls, "the steps ran no Spack"
+    assert {line.split()[0] for line in calls} == {"yes"}, calls

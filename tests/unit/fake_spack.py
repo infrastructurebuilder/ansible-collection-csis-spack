@@ -4,7 +4,9 @@ It answers the commands the modules run, the way Spack v1.2.0 answers them
 (see tests/integration, which runs the same modules against the real Spack),
 from a JSON state file named by FAKE_SPACK_STATE, and records every call in
 that file. ``<command> --help`` prints the text the real Spack printed for
-it, kept in fake_spack_help.json.
+it, kept in fake_spack_help.json. ``python <script> <args>`` runs the script
+here, with stand_in/ first on sys.path for its ``import spack.util.spack_yaml``
+(spec 006).
 
 State keys:
   version          what ``spack --version`` prints
@@ -22,6 +24,7 @@ State keys:
   version          also the version the stand-in plays: "1.0..." and "1.1..." make the
                    commands that differ behave as in those versions (fake_spack_setup.py)
   (and those of fake_spack_setup.py, for configuration, mirrors, keys and detection)
+  concretized_manifest  the text of the environment's spack.yaml at its last ``concretize``
   calls            every argument list the fake was run with
 """
 
@@ -94,6 +97,23 @@ def config_get_for(code: str) -> list[str]:
     return ["config", "get", "--json", merged.group(1)]
 
 
+STAND_IN = Path(__file__).with_name("stand_in")
+
+
+def run_script(script: str, args: list[str]) -> int:
+    """``spack python <script> <args>``: run it here, finding the stand-in ``spack.util.spack_yaml``."""
+    import runpy
+
+    saved = sys.argv, list(sys.path)
+    sys.argv = [script, *args]
+    sys.path.insert(0, str(STAND_IN))
+    try:
+        runpy.run_path(script, run_name="__main__")
+    finally:
+        sys.argv, sys.path[:] = saved
+    return 0
+
+
 def main(argv: list[str]) -> int:
     path, state = load()
     state.setdefault("calls", []).append(argv)
@@ -107,6 +127,8 @@ def main(argv: list[str]) -> int:
     if rest[:2] == ["python", "-c"]:
         # Spack 1.0's way to configuration as JSON, read as the "config get --json" it stands for.
         argv = env_args + config_get_for(rest[2])
+    elif rest[:1] == ["python"] and len(rest) > 1:
+        return run_script(rest[1], rest[2:])
     elif "--json" in rest and rest[:1] == ["config"] and fake_spack_setup.playing(state) < (1, 1):
         print("==> Error: unrecognized arguments: --json", file=sys.stderr)
         return 1
@@ -130,6 +152,9 @@ def main(argv: list[str]) -> int:
         print("==> There are no unused specs. Spack's store is clean.")
     elif argv[:1] == ["concretize"] and env:
         fail(state, "concretize")
+        # What the environment held when it was concretized, for the tests to read.
+        state["concretized_manifest"] = (Path(env) / "spack.yaml").read_text()
+        save(path, state)
         (Path(env) / "spack.lock").write_text(json.dumps(state["lock"], indent=1, sort_keys=True))
     elif argv[:2] == ["find", "--json"] and env:
         lock = env_lock(env)

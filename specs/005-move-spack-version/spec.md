@@ -5,7 +5,7 @@
 **Created**: 2026-11-25
 
 **Status**: Done 2026-11-26: `just test` (345 tests) and `just full-test`
-pass; merged into `develop` (`0b7babe`) 2026-11-27. Not released. It changes spec
+pass; merged into `develop` (`0b7babe`) 2026-11-27. Released in 0.0.4 on Ansible Galaxy, 2026-11-27. It changes spec
 004's install step ([specs/004-install-spack/](../004-install-spack/spec.md)),
 merged into this branch on 2026-11-26
 

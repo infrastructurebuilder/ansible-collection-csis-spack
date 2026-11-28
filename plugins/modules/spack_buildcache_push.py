@@ -15,8 +15,9 @@ description:
   - Runs C(spack buildcache push) for an environment, so that what it built
     can be installed elsewhere from the mirror instead of being built again.
   - Reports a change only when a package was pushed that the mirror did not
-    have, or that I(force) overwrote. Rebuilding the mirror's index
-    (I(update_index)) alone is not reported as a change.
+    have, or that I(force) overwrote. With I(update_index), Spack rebuilds
+    the mirror's index only after a push that sent something, so a run with
+    nothing to push leaves the index alone and reports no change.
   - What was pushed is learned from the mirror, not from what Spack prints.
     C(spack buildcache check) is asked before and after which of the
     environment's packages the mirror lacks.
@@ -68,7 +69,13 @@ options:
     default: false
   update_index:
     description:
-      - Rebuild the mirror's index after pushing.
+      - Rebuild the mirror's index after a push. Spack rebuilds it only after
+        a push that sent something; when nothing was pushed it leaves the
+        index as it is, so a repeat run changes nothing.
+      - An index changed by other means (a mirror edited by hand, a push from
+        elsewhere without this option) is therefore not put right by a run
+        with nothing to push. Run C(spack buildcache update-index) for that,
+        for example in a C(command) step of the C(setup) role.
     type: bool
     default: false
   only:
@@ -272,9 +279,13 @@ def main():
             elif params["key"]:
                 push += ["--key", params["key"]]
             if force == "once" and overwrite:
-                # Exactly these, by hash, and not their dependencies again.
+                # Exactly these, by hash, and not their dependencies again. A forced push is a
+                # push: the index is rebuilt after it, though the push that follows sends nothing.
                 chosen = ["/" + digest for digest in sorted(overwrite)]
-                again = [*push, "--only", "package", "--force", params["mirror"], *chosen]
+                again = list(push)
+                if params["update_index"]:
+                    again.append("--update-index")
+                again += ["--only", "package", "--force", params["mirror"], *chosen]
                 spack.run(spack.answered(again, words=2), env_path=path)
             args = list(push)
             if params["update_index"]:
